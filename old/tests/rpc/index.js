@@ -22,4 +22,4 @@ const runPath = (path) => {
 	catch (err){ console.error(err); }
 }
 
-runPath('index.ora');
+runPath('saves/khalidrpc.ora');

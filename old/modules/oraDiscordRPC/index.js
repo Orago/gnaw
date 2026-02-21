@@ -1,6 +1,6 @@
 import { customFunction, customKeyword, customExtension } from '../../ora/util/extensions.js';
 import rpc from 'discord-rpc';
-
+console.log(process.pid)
 function defaultActivity (){
 	return {
 		pid: process.pid,
@@ -39,7 +39,7 @@ function createClient (clientID){
 		activityLoad = undefined;
 	});
 }
-
+const started = Date.now();
 
 function handleImage (size, items, activity){
 	if (Array.isArray(items) != true || items.length != 2)
@@ -49,6 +49,17 @@ function handleImage (size, items, activity){
 
 	activity.assets[`${size}_image`] = image;
 	activity.assets[`${size}_text`] = text;
+	activity.party = {
+		id: 'ae488379-351d-4a4f-ad32-2b9b01c91657',
+		size: [1, 3]
+	}
+	activity.secrets = {
+		join: 'MTI4NzM0OjFpMmhuZToxMjMxMjM='
+	}
+	activity.timestamps = {
+		start: started,
+		// end: started + 100000
+	}
 }
 
 const updateActivityFN = new customFunction('rich_presence', function ({ iter, scope }) {

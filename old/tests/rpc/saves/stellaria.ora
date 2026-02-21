@@ -1,0 +1,6 @@
+rpc connect "1190008472247476346";
+rpc state 'In world (testing3)';
+rpc details 'Building Worlds';
+rpc large ['823', "Beta Testing Client"];
+rpc small ['185', 'World: testing3'];
+rpc update;
