@@ -90,6 +90,11 @@ const updateActivityFN = new customFunction('rich_presence', function ({ iter, s
 		
 		else activityLoad = rpcActivity;
 	}
+
+	activity.party = {
+		id: 'ae488379-351d-4a4f-ad32-2b9b01c91657',
+		size: [1, 3]
+	}
 });
 
 export const oraRPC = new customExtension({

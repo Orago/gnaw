@@ -14,10 +14,10 @@ type IterableCheck<T extends AnyToken> =
 
 export default class TokenIterator<T extends AnyToken = AnyToken> {
 	readonly stack: T[] = [];
-	public items: T[];
+	// public items: T[];
 	offset: number = 0;
 
-	constructor(items: T[], public settings: IterableOptions = {}) {
+	constructor(public items: T[], public settings: IterableOptions = {}) {
 		this.items = [...items];
 	}
 
@@ -91,7 +91,6 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 
 		return false;
 	}
-
 
 	disposeIf(mode: "is" | "not", check: IterableCheck<T>, n = 1) {
 		const status = this.match(check, n);

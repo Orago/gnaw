@@ -1,10 +1,5 @@
-import { VecUtility } from "../language.js";
 import { SeparatorTokenType, TokenType } from "../tokens.js";
-import {
-	LanguageHandler,
-	LanguageHook,
-	type HandlerBlob,
-} from "../utility/handlers.js";
+import { LanguageHandler, type HandlerBlob } from "../utility/handlers.js";
 
 export enum VariableType {
 	NULL = "null",
@@ -13,8 +8,7 @@ export enum VariableType {
 	STRING = "string",
 	OBJECT = "object",
 	ARRAY = "array",
-	IDENTIFIER = "identifier",
-	CUSTOM = "custom",
+	REFERENCE = "reference",
 }
 
 export type VariableLike =
@@ -37,14 +31,9 @@ export type VariableLike =
 			value: Record<string, VariableLike>;
 	  }
 	| {
-			type: VariableType.IDENTIFIER;
+			type: VariableType.REFERENCE;
 			// variable id
 			value: string;
-	  }
-	| {
-			type: VariableType.CUSTOM;
-			id: any;
-			value: any;
 	  };
 
 export class LanguageHandler_Variables extends LanguageHandler {
@@ -56,64 +45,52 @@ export class LanguageHandler_Variables extends LanguageHandler {
 		},
 	};
 
-	constructor() {
-		super();
-
-		this.line_hooks.push({
-			test: (ref) => {
-				return ref.iterator.disposeIf(
-					"is",
-					(token) =>
-						token.type == TokenType.IDENTIFIER &&
-						token.value == "var"
-				);
-			},
-			run: (ref) => this.handleLineRun(ref),
-		});
-	}
-
-	private getNull(): VariableLike {
+	getNull(): VariableLike {
 		return {
 			type: VariableType.NULL,
 			value: 0,
 		};
 	}
 
-	private unwrapVariable(name: string): VariableLike {
+	unwrapVariable(name: string): VariableLike {
 		let got = this.variables[name] ?? this.getNull();
 
-		if (got.type == VariableType.IDENTIFIER) {
+		if (got.type == VariableType.REFERENCE) {
 			return this.unwrapVariable(got.value);
 		} else {
 			return got;
 		}
 	}
 
-	private getName(blob: HandlerBlob): string | false {
-		const capture = VecUtility.captureVec(blob.language, blob.iterator);
+	getName(blob: HandlerBlob): string | false {
+		if (
+			blob.iterator.dispose("if", (token) => token.value == "(") != true
+		) {
+			return false;
+		}
+		const name = blob.iterator.next();
 
-		if (capture[1] == 0 || capture[0].length != 1) {
-			blob.language.error("Invalid thingymadingy");
+		if (
+			name.value?.type != TokenType.IDENTIFIER &&
+			name.value?.type != TokenType.STRING &&
+			name.value?.type != TokenType.NUMBER
+		) {
+			blob.language.error("Invalid identifier");
+			return false;
+		} else if (
+			blob.iterator.dispose("if", (token) => token.value == ")") != true
+		) {
+			blob.language.error("Invalid closer");
 			return false;
 		}
 
-		const variable_like = capture[0][0];
-
-		if (
-			variable_like.type == VariableType.IDENTIFIER ||
-			variable_like.type == VariableType.STRING ||
-			variable_like.type == VariableType.NUMBER
-		) {
-			return String(variable_like.value);
-		}
-
-		return false;
+		return String(name.value.value);
 	}
 
 	handleValue(blob: HandlerBlob): VariableLike | false {
 		if (
-			blob.iterator.disposeIf(
-				"is",
+			blob.iterator.dispose(
+				"if",
 				(token) =>
 					token.type == TokenType.IDENTIFIER && token.value == "ref"
 			)
@@ -125,12 +102,12 @@ export class LanguageHandler_Variables extends LanguageHandler {
 			}
 
 			return {
-				type: VariableType.IDENTIFIER,
+				type: VariableType.REFERENCE,
 				value: variable_name,
 			};
 		} else if (
-			blob.iterator.disposeIf(
-				"is",
+			blob.iterator.dispose(
+				"if",
 				(token) =>
 					token.type == TokenType.IDENTIFIER && token.value == "var"
 			)
@@ -147,8 +124,24 @@ export class LanguageHandler_Variables extends LanguageHandler {
 		return false;
 	}
 
+	handleAny(blob: HandlerBlob): void {}
+
+	handleLineTest({ iterator: line }: HandlerBlob): boolean {
+		return line.dispose(
+			"if",
+			(token) =>
+				token.type == TokenType.IDENTIFIER && token.value == "var"
+		);
+	}
 	handleLineRun({ language, iterator: line }: HandlerBlob): void {
+		console.log(
+			"vna",
+			line.items.slice(line.offset, line.offset + 5),
+			line.peek()
+		);
 		const variable_name = line.next();
+
+		console.log("got vname", variable_name);
 
 		if (variable_name?.value?.type != TokenType.IDENTIFIER) {
 			language.error("Required identifier");
@@ -160,12 +153,24 @@ export class LanguageHandler_Variables extends LanguageHandler {
 			value: "",
 		} as any;
 
-		if (line.disposeIf("is", TokenType.COLON)) {
+		if (
+			line.dispose(
+				"if",
+				(token) =>
+					token.type == TokenType.OPERATOR && token.value == ":"
+			)
+		) {
 			language.error("Variables with types aren't handled yet");
 			return;
 		}
 
-		if (line.disposeIf("is", TokenType.EQUAL)) {
+		if (
+			line.dispose(
+				"if",
+				(token) =>
+					token.type == TokenType.IDENTIFIER && token.value == "="
+			)
+		) {
 		} else {
 			language.error(`VAR(${variable_name.value.value}), Missing =`);
 			return;
@@ -182,39 +187,12 @@ export class LanguageHandler_Variables extends LanguageHandler {
 
 		const next = line.next()?.value;
 
-		if ((next?.type == TokenType.SEMICOLON) != true) {
+		if (
+			(next?.type == TokenType.SEPARATOR &&
+				next.separator == SeparatorTokenType.LINE_END) != true
+		) {
 			language.error("Missing variable ender");
 			return;
 		}
-	}
-}
-
-export class LanguageHandler_Events extends LanguageHandler {
-	id = "event_handling";
-	variables: Partial<Record<string, VariableLike>> = {
-		orago: {
-			type: VariableType.STRING,
-			value: "meow",
-		},
-	};
-
-	constructor() {
-		super();
-
-		this.line_hooks.push({
-			test: (ref) => {
-				return ref.iterator.disposeIf(
-					"is",
-					(token) =>
-						token.type == TokenType.IDENTIFIER &&
-						token.value == "on"
-				);
-			},
-			run: (ref) => this.handleLineRun(ref),
-		});
-	}
-
-	handleLineRun({ language, iterator: line }: HandlerBlob): void {
-		// console.log("handling, events", line.select("remaining"));
 	}
 }

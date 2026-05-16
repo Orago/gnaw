@@ -1,6 +1,4 @@
-rpc connect "1040860768960254043";
-rpc state 'Dj Khalid';
-rpc details 'We the best';
-rpc large ['weda', 'dwad'];
-rpc small ['gibby', 'God Did'];
+rpc connect "466733503720062996";
+rpc state 'We the best';
+rpc details 'Orago';
 rpc update;

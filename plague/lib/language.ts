@@ -11,7 +11,10 @@ import {
 	TokenGroup,
 	TokenType,
 } from "./tokens.js";
-import { type HandlerBlob, LanguageHandlerList } from "./utility/handlers.js";
+import {
+	type HandlerContext,
+	LanguageHandlerList,
+} from "./utility/handlers.js";
 
 export class LineUtility {
 	static captureIndentCount(iterator: TokenIterator): number {
@@ -260,7 +263,7 @@ export class Language {
 			let handled: number = 0;
 			// const [line_indent, line_tokens] = this.scrapeNewLine(iterator);
 			// const line_iterator = new TokenIterator(line_tokens);
-			const blob: HandlerBlob = {
+			const blob: HandlerContext = {
 				language: this,
 				iterator: iterator,
 			};

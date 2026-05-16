@@ -1,0 +1,24 @@
+{
+	"name": "guh",
+	"version": "1.0.0",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"start": "node dist",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"r": "tsc && npm start",
+		"build": "swc lib -d dist --strip-leading-paths",
+		"q": "npm run build && npm start"
+	},
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"devDependencies": {
+		"@types/node": "^25.0.10",
+		"typescript": "^5.9.3"
+	},
+	"dependencies": {
+		"@swc/cli": "^0.7.10",
+		"@swc/core": "^1.15.10"
+	}
+}

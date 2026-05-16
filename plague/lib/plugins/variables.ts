@@ -3,7 +3,7 @@ import { SeparatorTokenType, TokenType } from "../tokens.js";
 import {
 	LanguageHandler,
 	LanguageHook,
-	type HandlerBlob,
+	type HandlerContext,
 } from "../utility/handlers.js";
 
 export enum VariableType {
@@ -89,7 +89,7 @@ export class LanguageHandler_Variables extends LanguageHandler {
 		}
 	}
 
-	private getName(blob: HandlerBlob): string | false {
+	private getName(blob: HandlerContext): string | false {
 		const capture = VecUtility.captureVec(blob.language, blob.iterator);
 
 		if (capture[1] == 0 || capture[0].length != 1) {
@@ -110,7 +110,7 @@ export class LanguageHandler_Variables extends LanguageHandler {
 		return false;
 	}
 
-	handleValue(blob: HandlerBlob): VariableLike | false {
+	handleValue(blob: HandlerContext): VariableLike | false {
 		if (
 			blob.iterator.disposeIf(
 				"is",
@@ -147,7 +147,7 @@ export class LanguageHandler_Variables extends LanguageHandler {
 		return false;
 	}
 
-	handleLineRun({ language, iterator: line }: HandlerBlob): void {
+	handleLineRun({ language, iterator: line }: HandlerContext): void {
 		const variable_name = line.next();
 
 		if (variable_name?.value?.type != TokenType.IDENTIFIER) {
@@ -214,7 +214,7 @@ export class LanguageHandler_Events extends LanguageHandler {
 		});
 	}
 
-	handleLineRun({ language, iterator: line }: HandlerBlob): void {
+	handleLineRun({ language, iterator: line }: HandlerContext): void {
 		// console.log("handling, events", line.select("remaining"));
 	}
 }
