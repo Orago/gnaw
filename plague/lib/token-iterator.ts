@@ -112,7 +112,9 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 		if (status == true) {
 			return this.advance(1);
 		}
-		throw new Error(`Expected and failed`);
+
+		console.log(">>>", check);
+		throw new Error(`^^^ Expected token match and failed`);
 	}
 	expectResult<T extends TokenType>(check: T): AnyToken & { type: T } {
 		const status = this.match(check, 1);
@@ -120,7 +122,7 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 		if (status == true) {
 			return this.advance(1) as any;
 		}
-		throw new Error(`Expected and failed`);
+		throw new Error(`Expected ${check} and failed`);
 	}
 
 	last(n: number = 0) {

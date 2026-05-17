@@ -401,22 +401,32 @@ export class ForLoopPlugin extends PlaguePlugin<{
 					start_value.type == DataType.NUMBER ? start_value.value : 0;
 				const end =
 					end_value.type == DataType.NUMBER ? end_value.value : 0;
+
+
 				let calls: number = 0;
+				const local_scope = scope.extend();
+
 				for (let i = start; i <= end; i++) {
 					calls++;
 					if (calls++ > this.max_calls) {
 						throw new Error("Too many for-loop calls!");
 					}
+
+// local_scope.set(statement.data.name, )
 				}
 			},
 			createStatement: (ctx: ParserContext) => {
 				const { iterator } = ctx;
 				iterator.expect(this.statement.case);
 				const name = iterator.expectResult(TokenType.IDENTIFIER).value;
+
 				iterator.expect(TokenType.EQUAL);
+				iterator.expect(TokenType.PAREN_LEFT);
+
 				const start = PlagueParser.parseExpression(ctx);
 				iterator.expect(TokenType.COMMA);
 				const end = PlagueParser.parseExpression(ctx);
+				iterator.expect(TokenType.PAREN_RIGHT);
 				const body = PlagueParser.parseBlock(ctx, () => {
 					return PlagueParser.parseStatement(ctx);
 				});
@@ -600,4 +610,5 @@ export const core_plugins: PlaguePlugin<any>[] = [
 	new ReturnPlugin(),
 	new TablesPlugin(),
 	new VecPlugin(),
+	new ForLoopPlugin(),
 ];

@@ -3,9 +3,19 @@ import { PlagueLanguage } from "./lang/language.js";
 import { PlagueEnvironment, PlagueSystem } from "./lang/states.js";
 import { DataType } from "./lang/variables.js";
 const script = `
-let lorem_ipsum = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
+fn divide (a, b){
+	return a / b
+}
 
-print(lorem_ipsum / "o" / "e")
+fn multiply (a,b){
+	return a * b
+}
+
+let cat = fn (a,b){
+	return divide(multiply(a, b), 2)
+}
+
+print(cat(5,3))
 `;
 
 const script2 = `
@@ -13,12 +23,12 @@ fn divide (a, b){
 	return a / b
 }
 
-fn add (a,b){
-	return a + b
+fn multiply (a,b){
+	return a * b
 }
 
 let cat = fn (a,b){
-return divide(add(a * b), 2)
+	return divide(multiply(a, b), 2)
 }
 
 print(cat(5,3))
