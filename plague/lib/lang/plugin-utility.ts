@@ -6,31 +6,28 @@ import {
 	type PlagueParserContext,
 	type Statement,
 	StatementType,
+	VariableOptions,
 } from "./interfaces.js";
 import { PlagueScope } from "./states.js";
 import { DataValue } from "./variables.js";
-
-// abstract class PlaguePluginStatement {
-// 	constructor(public plugin: PlaguePlugin) {}
-// 	abstract case: IterableCheck<AnyToken>;
-// 	abstract handleStatement(statement: Statement, scope: PlagueScope): any;
-
-// 	abstract createStatement(ctx: PlagueParserContext): Statement;
-// 	protected formatStatement<T extends any>(data: T): CustomStatement<T> {
-// 		return {
-// 			type: StatementType.CUSTOM_PLUGIN,
-// 			id: this.plugin.id,
-// 			data,
-// 		};
-// 	}
-// }
-
+export type PlagueFNCallback = () => [string, DataValue, VariableOptions?];
 export abstract class PlaguePlugin<
 	Opts extends {
 		statement?: Statement;
 		expression?: Expression;
 	} = {}
 > {
+	static wrapFunction(
+		name: string,
+		data: DataValue,
+		options?: VariableOptions
+	): PlagueFNCallback {
+		if (options != undefined) {
+			return () => [name, data, options];
+		} else {
+			return () => [name, data];
+		}
+	}
 	// static Statement = PlaguePluginStatement;
 	static ownsStatement(plugin: PlaguePlugin, statement: Statement): boolean {
 		return (
@@ -47,6 +44,7 @@ export abstract class PlaguePlugin<
 		: {
 				case: (t: AnyToken) => boolean;
 				create: (ctx: PlagueParserContext) => Opts["expression"];
+				test?: (expression: Expression) => boolean;
 				handle: (
 					expression: Opts["expression"],
 					scope: PlagueScope
@@ -70,13 +68,9 @@ export abstract class PlaguePlugin<
 				) => any;
 		  };
 
-	declare values?: ()=>Record<string, DataValue>;
-	// * Statement
-	// abstract statement_case: IterableCheck<AnyToken>;
-
-	// abstract handleStatement(statement: Statement, scope: PlagueScope): any;
-
-	// abstract createStatement(ctx: PlagueParserContext): Statement;
+	declare values?: () =>
+		| Record<string, DataValue>
+		| [string, DataValue, VariableOptions?][];
 
 	protected formatStatement<T extends any>(data: T): CustomStatement<T> {
 		return {

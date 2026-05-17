@@ -40,7 +40,7 @@ export class PlagueParser {
 
 			if (
 				target.type !== ExpressionType.IDENTIFIER &&
-				target.type !== ExpressionType.MemberAccess
+				target.type !== ExpressionType.MEMBER_ACCESS
 			) {
 				throw new Error("Invalid assignment type");
 			}
@@ -61,7 +61,7 @@ export class PlagueParser {
 
 		const lup = (op: BinaryMethod) =>
 			(left = {
-				type: ExpressionType.Binary,
+				type: ExpressionType.BINARY,
 				left,
 				op,
 				right: this.parsePrimary(ctx),
@@ -84,6 +84,8 @@ export class PlagueParser {
 				lup(BinaryMethod.GREATER_THAN);
 			} else if (iterator.disposeIf("is", TokenType.LESS_THAN)) {
 				lup(BinaryMethod.LESS_THAN);
+			} else if (iterator.disposeIf("is", TokenType.CAST)) {
+				lup(BinaryMethod.AS);
 			} else {
 				break;
 			}
@@ -140,7 +142,7 @@ export class PlagueParser {
 
 					iterator.expect(TokenType.PAREN_RIGHT);
 					expression = {
-						type: ExpressionType.CallExpression,
+						type: ExpressionType.CALL_EXPRESSION,
 						callee: expression,
 						args,
 					};
@@ -160,7 +162,7 @@ export class PlagueParser {
 						const property = this.parseExpression(ctx);
 						iterator.expect(TokenType.BRACE_RIGHT);
 						expression = {
-							type: ExpressionType.MemberAccess,
+							type: ExpressionType.MEMBER_ACCESS,
 							object: expression,
 							property,
 						};
@@ -196,7 +198,7 @@ export class PlagueParser {
 					}
 
 					expression = {
-						type: ExpressionType.MemberAccess,
+						type: ExpressionType.MEMBER_ACCESS,
 						object: expression,
 						property,
 					};

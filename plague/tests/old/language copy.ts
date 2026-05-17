@@ -1,24 +1,24 @@
-import { Lexer } from "../lexer.js";
-import TokenIterator from "../token-iterator.js";
-import { AnyToken, TokenType } from "../tokens.js";
-import { CastPlugin } from "./core-plugins.js";
-import { MethodMod } from "./core-utilities.js";
-import {
-	BinaryMethod,
-	Expression,
-	ExpressionType,
-	PlagueParserContext,
-	Statement,
-	StatementType,
-} from "./interfaces.js";
-import { PlagueParser } from "./parser.js";
-import {
-	type PlagueEnvironment,
-	type PlagueScope,
-	type PlagueSystem,
-} from "./states.js";
-import { DataType as DataType, FunctionDataValue } from "./variables.js";
-import type { DataValue } from "./variables.js";
+// import { Lexer } from "../lexer.js";
+// import TokenIterator from "../token-iterator.js";
+// import { AnyToken, TokenType } from "../tokens.js";
+// import { CastPlugin } from "./core-plugins.js";
+// import { method_mods, MethodMod } from "./core-utilities.js";
+// import {
+// 	BinaryMethod,
+// 	Expression,
+// 	ExpressionType,
+// 	PlagueParserContext,
+// 	Statement,
+// 	StatementType,
+// } from "./interfaces.js";
+// import { PlagueParser } from "./parser.js";
+// import {
+// 	type PlagueEnvironment,
+// 	type PlagueScope,
+// 	type PlagueSystem,
+// } from "./states.js";
+// import { DataType as DataType, FunctionDataValue } from "./variables.js";
+// import type { DataValue } from "./variables.js";
 
 export class PlagueLanguage {
 	static createFunction(
@@ -119,6 +119,7 @@ export class PlagueLanguage {
 				plugin.statement.test != undefined
 					? plugin.statement.test(statement)
 					: statement.type == StatementType.CUSTOM_PLUGIN &&
+					  plugin.statement != undefined &&
 					  statement.id == plugin.id;
 
 			if (test) {
@@ -143,20 +144,6 @@ export class PlagueLanguage {
 		expression: Expression,
 		scope: PlagueScope
 	): DataValue {
-		for (const plugin of scope.environment.system.plugins) {
-			if (plugin.primary_literal == undefined) continue;
-
-			const test =
-				plugin.primary_literal.test != undefined
-					? plugin.primary_literal.test(expression)
-					: expression.type == ExpressionType.CUSTOM &&
-					  expression.id == plugin.id;
-
-			if (test) {
-				return plugin.primary_literal.handle(expression, scope);
-			}
-		}
-
 		switch (expression.type) {
 			case ExpressionType.NUMBER:
 				return { type: DataType.NUMBER, value: expression.value };
@@ -171,7 +158,7 @@ export class PlagueLanguage {
 						value: 0,
 					}
 				);
-			case ExpressionType.BINARY: {
+			case ExpressionType.Binary: {
 				const left = PlagueLanguage.evaluateExpression(
 					expression.left,
 					scope
@@ -195,12 +182,51 @@ export class PlagueLanguage {
 					}
 				}
 
-				const m = MethodMod.operateAny(left, expression.op, right);
-				if (m) return m;
+				const primary = MethodMod.name(
+					left.type,
+					expression.op,
+					right.type
+				);
+				const other_any_typed = MethodMod.name(
+					left.type,
+					expression.op,
+					DataType.ANY
+				);
+
+				if (left.type == DataType.ARRAY) {
+					const m = MethodMod.operateArray(
+						left,
+						expression.op,
+						right
+					);
+					if (m) return m;
+				}
+
+				if (left.type == DataType.NUMBER) {
+					const m = MethodMod.operateNumber(
+						left,
+						expression.op,
+						right
+					);
+					if (m) return m;
+				}
+
+				if (
+					left.type == DataType.STRING ||
+					left.type == DataType.NUMBER
+				) {
+					const m = MethodMod.operateString(
+						left,
+						expression.op,
+						right
+					);
+					if (m) return m;
+				}
+
 				throw new Error(`Invalid operator ${expression.op}`);
 			}
 
-			case ExpressionType.CALL_EXPRESSION: {
+			case ExpressionType.CallExpression: {
 				const fn = PlagueLanguage.evaluateExpression(
 					expression.callee,
 					scope
@@ -221,7 +247,7 @@ export class PlagueLanguage {
 				return got as DataValue;
 			}
 
-			case ExpressionType.MEMBER_ACCESS: {
+			case ExpressionType.MemberAccess: {
 				const object = this.evaluateExpression(
 					expression.object,
 					scope
@@ -263,7 +289,7 @@ export class PlagueLanguage {
 					scope.set(expression.target.name, value);
 				}
 
-				if (expression.target.type == ExpressionType.MEMBER_ACCESS) {
+				if (expression.target.type == ExpressionType.MemberAccess) {
 					const obj = this.evaluateExpression(
 						expression.target.object,
 						scope
@@ -276,6 +302,16 @@ export class PlagueLanguage {
 					console.log("modifying", obj, key);
 				}
 				break;
+			}
+			case ExpressionType.CUSTOM: {
+				for (const plugin of scope.environment.system.plugins) {
+					if (
+						plugin.id == expression.id &&
+						plugin.primary_literal != undefined
+					) {
+						return plugin.primary_literal.handle(expression, scope);
+					}
+				}
 			}
 		}
 

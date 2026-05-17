@@ -1,15 +1,15 @@
-import TokenIterator from "../token-iterator.js";
-import {
-	default_language_dicitionary,
-	type LanguageDictionary,
-	Lexer,
-} from "../lexer.js";
-import { type VariableLike, VariableType } from "./plugins/variables.js";
-import { type AnyToken, TokenGroup, TokenType } from "../tokens.js";
-import {
-	type HandlerContext,
-	LanguageHandlerList,
-} from "./plugins/utility/handlers.js";
+// import TokenIterator from "../token-iterator.js";
+// import {
+// 	default_language_dicitionary,
+// 	type LanguageDictionary,
+// 	Lexer,
+// } from "../lexer.js";
+// import { type VariableLike, VariableType } from "./plugins/variables.js";
+// import { type AnyToken, TokenGroup, TokenType } from "../tokens.js";
+// import {
+// 	type HandlerContext,
+// 	LanguageHandlerList,
+// } from "./plugins/utility/handlers.js";
 
 export class LineUtility {
 	static captureIndentCount(iterator: TokenIterator): number {

@@ -28,6 +28,7 @@ export interface LanguageDictionary extends Record<string, string[]> {
 
 	is: string[];
 	not: string[];
+	cast: string[];
 
 	// punctuation
 	comma: string[];
@@ -66,6 +67,7 @@ export const default_language_dicitionary: LanguageDictionary = {
 
 	is: ["==", "is"],
 	not: ["!=", "not"],
+	cast: ["as"],
 
 	// punctuation
 	comma: [","],
@@ -197,9 +199,13 @@ export class Lexer {
 		keywords: LanguageDictionary
 	): DelimiterToken["type"] | undefined {
 		if (keywords.brace_left.includes(value)) {
-			return TokenType.BRACKET_LEFT;
+			return TokenType.BRACE_LEFT;
 		} else if (keywords.brace_right.includes(value)) {
 			return TokenType.BRACE_RIGHT;
+		} else if (keywords.bracket_left.includes(value)) {
+			return TokenType.BRACKET_LEFT;
+		} else if (keywords.bracket_right.includes(value)) {
+			return TokenType.BRACKET_RIGHT;
 		} else if (keywords.parenthesis_left.includes(value)) {
 			return TokenType.PAREN_LEFT;
 		} else if (keywords.parenthesis_right.includes(value)) {
@@ -293,6 +299,13 @@ export class Lexer {
 				value,
 				raw: value,
 			};
+		} else if (keywords.cast.includes(value)) {
+			token = {
+				type: TokenType.CAST,
+				group: TokenGroup.OPERATOR,
+				value,
+				raw: value,
+			};
 		} else if ((tmptoken = this._parseOperator(value)) != undefined) {
 			token = {
 				type: tmptoken,
@@ -371,7 +384,7 @@ export class Lexer {
 			return include.includes(token.type);
 		});
 	}
-	
+
 	static excluding(list: AnyToken[], exclude: TokenType[]): AnyToken[] {
 		return list.filter((token) => {
 			return exclude.includes(token.type) != true;

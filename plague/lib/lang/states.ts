@@ -1,3 +1,4 @@
+import { VariableOptions } from "./interfaces.js";
 import type { PlaguePlugin } from "./plugin-utility.js";
 import { DataValue } from "./variables.js";
 
@@ -36,6 +37,8 @@ export class PlagueScope {
 	// }
 
 	variables: Partial<Record<string, DataValue>> = {};
+	variable_modes: Partial<Record<string, VariableOptions>> = {};
+
 	// functions: Partial<Record<string, any>> = {};
 
 	constructor(
@@ -51,7 +54,32 @@ export class PlagueScope {
 		return PlagueScope.getVariable(this, name);
 	}
 
-	set(name: string, value: DataValue) {
+	set(name: string, value: DataValue, options?: VariableOptions) {
+		if (options != undefined) {
+			this.updateVariableOptions(name, options);
+		}
+
+		const opts = this.variable_modes[name];
+		if (opts?.readonly == true) {
+			throw new Error(`Cannot set over read-only variable (${name})`);
+		}
+
+		if (value.type != this.variables[name]?.type) {
+			delete this.variable_modes[name];
+		}
+
 		this.variables[name] = value;
+	}
+
+	updateVariableOptions(name: string, options?: VariableOptions) {
+		if (options) {
+			this.variable_modes[name] = options;
+		} else {
+			delete this.variable_modes[name];
+		}
+	}
+
+	delete(name: string) {
+		delete this.variables[name];
 	}
 }

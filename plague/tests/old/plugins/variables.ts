@@ -1,5 +1,5 @@
 import { VecUtility } from "../language.js";
-import { SeparatorTokenType, TokenType } from "../../tokens.js";
+import { SeparatorTokenType, TokenType } from "../../../lib/tokens.js";
 import {
 	LanguageHandler,
 	LanguageHook,

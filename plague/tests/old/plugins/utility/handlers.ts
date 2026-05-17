@@ -1,4 +1,4 @@
-import type TokenIterator from "../../../token-iterator.js";
+import type TokenIterator from "../../../../lib/token-iterator.js";
 import type { Language } from "../../language.js";
 import type { VariableLike } from "../variables.js";
 

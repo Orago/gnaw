@@ -1,6 +1,6 @@
 import type TokenIterator from "../token-iterator.js";
-import type { PlaguePlugin } from "./plugin-utility.js";
-import { PlagueSystem } from "./states.js";
+import type { PlagueSystem } from "./states.js";
+import type { DataType } from "./variables.js";
 
 export enum BinaryMethod {
 	ADD,
@@ -11,6 +11,7 @@ export enum BinaryMethod {
 	LESS_THAN,
 	IS,
 	NOT,
+	AS,
 }
 
 export enum StatementType {
@@ -65,19 +66,15 @@ export enum ExpressionType {
 	BOOLEAN,
 	IDENTIFIER,
 
-	CallExpression,
-	MemberAccess,
-	Binary,
+	CALL_EXPRESSION,
+	MEMBER_ACCESS,
+	BINARY,
+	FUNCTION,
 
-	TABLE,
 	ASSIGN,
 
 	CUSTOM,
 }
-
-export type TableEntry =
-	| { key: string; value: Expression }
-	| { value: Expression };
 
 export type CustomExpression<T extends any = any> = {
 	type: ExpressionType.CUSTOM;
@@ -93,24 +90,33 @@ export type Expression =
 	| { type: ExpressionType.IDENTIFIER; name: string }
 	| { type: ExpressionType.ASSIGN; target: Expression; value: Expression }
 	| {
-			type: ExpressionType.Binary;
+			type: ExpressionType.BINARY;
 			left: Expression;
 			op: BinaryMethod;
 			right: Expression;
 	  }
 	| {
-			type: ExpressionType.CallExpression;
+			type: ExpressionType.CALL_EXPRESSION;
 			callee: Expression;
 			args: Expression[];
 	  }
 	| {
-			type: ExpressionType.MemberAccess;
+			type: ExpressionType.MEMBER_ACCESS;
 			object: Expression;
 			property: Expression;
 	  }
-	| { type: ExpressionType.TABLE; entries: TableEntry[] };
+	| {
+			type: ExpressionType.FUNCTION;
+			params: string[];
+			body: Statement[];
+	  };
 
 export interface PlagueParserContext {
 	iterator: TokenIterator;
 	system: PlagueSystem;
+}
+
+export interface VariableOptions {
+	type?: DataType;
+	readonly?: boolean;
 }

@@ -1,19 +1,19 @@
-import type { IterableCheck } from "../token-iterator.js";
-import { TokenType } from "../tokens.js";
-import {
-	type Expression,
-	ExpressionType,
-	type PlagueParserContext,
-	ReturnStatement,
-	type Statement,
-	StatementType,
-	TableEntry,
-} from "./interfaces.js";
-import { PlagueParser } from "./parser.js";
-import { PlagueLanguage } from "./language.js";
-import { PlaguePlugin } from "./plugin-utility.js";
-import type { PlagueScope } from "./states.js";
-import { DataTypes } from "./variables.js";
+// import type { IterableCheck } from "../token-iterator.js";
+// import { TokenType } from "../tokens.js";
+// import {
+// 	type Expression,
+// 	ExpressionType,
+// 	type PlagueParserContext,
+// 	ReturnStatement,
+// 	type Statement,
+// 	StatementType,
+// 	TableEntry,
+// } from "./interfaces.js";
+// import { PlagueParser } from "./parser.js";
+// import { PlagueLanguage } from "./language.js";
+// import { PlaguePlugin } from "./plugin-utility.js";
+// import type { PlagueScope } from "./states.js";
+// import { DataTypes } from "./variables.js";
 
 export class VariablePlugin extends PlaguePlugin<{
 	statement: {

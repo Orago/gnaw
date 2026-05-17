@@ -1,4 +1,4 @@
-export enum DataTypes {
+export enum DataType {
 	NULL = "null",
 	ANY = "any",
 	NUMBER = "number",
@@ -12,18 +12,18 @@ export enum DataTypes {
 }
 
 export type FunctionDataValue = {
-	type: DataTypes.FUNCTION;
-	call: (args: DataValue[]) => DataValue;
+	type: DataType.FUNCTION;
+	call: (args: DataValue[]) => DataValue | null;
 };
 
 export type DataValue =
-	| { type: DataTypes.NULL; value: 0 }
-	| { type: DataTypes.ANY; value: string }
-	| { type: DataTypes.STRING; value: string }
-	| { type: DataTypes.NUMBER; value: number }
-	| { type: DataTypes.ARRAY; value: DataValue[] }
-	| { type: DataTypes.OBJECT; value: Record<string, DataValue> }
-	| { type: DataTypes.IDENTIFIER; value: string }
-	| { type: DataTypes.CUSTOM; id: any; value: any }
-	| { type: DataTypes.BOOLEAN; value: boolean }
+	| { type: DataType.NULL; value: 0 }
+	| { type: DataType.ANY; value: string }
+	| { type: DataType.STRING; value: string }
+	| { type: DataType.NUMBER; value: number }
+	| { type: DataType.ARRAY; value: DataValue[] }
+	| { type: DataType.OBJECT; value: Record<string, DataValue> }
+	| { type: DataType.IDENTIFIER; value: string }
+	| { type: DataType.CUSTOM; id: any; value: any }
+	| { type: DataType.BOOLEAN; value: boolean }
 	| FunctionDataValue;

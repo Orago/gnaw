@@ -1,36 +1,42 @@
 import { core_plugins } from "./lang/core-plugins.js";
-import { Statement } from "./lang/interfaces.js";
 import { PlagueLanguage } from "./lang/language.js";
 import { PlagueEnvironment, PlagueSystem } from "./lang/states.js";
-import { DataTypes } from "./lang/variables.js";
+import { DataType } from "./lang/variables.js";
 const script = `
+fn divide (a, b){
+	return a / b
+}
+
 fn add (a,b){
 	return a + b
 }
 
+let cat = fn (a,b){
+return divide(add(a * b), 2)
+}
 
-print(add(5,3))
+print(cat(5,3))
 `;
+
 
 const system = new PlagueSystem();
 system.plugins = [...core_plugins];
 
 const env = new PlagueEnvironment(system);
 env.root_scope.set("print", {
-	type: DataTypes.FUNCTION,
+	type: DataType.FUNCTION,
 	call(args) {
 		console.log(
 			">>",
 			args.map((e) => ("value" in e ? e.value : Symbol("Custom")))
 		);
-		return { type: DataTypes.NULL, value: 0 };
+		return { type: DataType.NULL, value: 0 };
 	},
 });
 const statements = PlagueLanguage.parseString(system, script);
 // console.log(JSON.stringify(statements, null, 2), ["statements!"]);
 
 PlagueLanguage.run(env, statements);
-console.log(env.root_scope);
 // const lexed = Lexer.lex(script);
 // const tokens = Lexer.tokenize(lexed, {});
 

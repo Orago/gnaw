@@ -3,17 +3,17 @@ import { TokenType } from "../tokens.js";
 import {
 	type Expression,
 	ExpressionType,
-	type PlagueParserContext,
+	type PlagueParserContext as ParserContext,
 	ReturnStatement,
 	type Statement,
 	StatementType,
-	TableEntry,
+	VariableOptions,
 } from "./interfaces.js";
 import { PlagueParser } from "./parser.js";
 import { PlagueLanguage } from "./language.js";
-import { PlaguePlugin } from "./plugin-utility.js";
+import { PlagueFNCallback, PlaguePlugin } from "./plugin-utility.js";
 import type { PlagueScope } from "./states.js";
-import { DataTypes, DataValue } from "./variables.js";
+import { DataType, DataValue } from "./variables.js";
 
 export class VariablePlugin extends PlaguePlugin<{
 	statement: {
@@ -58,43 +58,69 @@ export class FunctionPlugin extends PlaguePlugin<{
 		params: string[];
 		body: Statement[];
 	};
+	expression: {
+		type: ExpressionType.FUNCTION;
+		params: string[];
+		body: Statement[];
+	};
 }> {
 	id = "function";
+
+	static getParams(ctx: ParserContext) {
+		return PlagueParser.parseBlock(
+			ctx,
+			() => {
+				const v = ctx.iterator.expectResult(TokenType.IDENTIFIER).value;
+				ctx.iterator.disposeIf("is", TokenType.COMMA);
+				return v;
+			},
+			TokenType.PAREN_LEFT,
+			TokenType.PAREN_RIGHT
+		);
+	}
+
+	static getBlock(ctx: ParserContext) {
+		return PlagueParser.parseBlock(ctx, () => {
+			return PlagueParser.parseStatement(ctx);
+		});
+	}
 
 	constructor() {
 		super();
 
-		this.statement = {
+		this.primary_literal = {
 			case: (t) => t.type == TokenType.IDENTIFIER && t.value == "fn",
-			handleStatement: (statement, scope) => {
+			create: (ctx) => {
+				const params = FunctionPlugin.getParams(ctx);
+				const body = FunctionPlugin.getBlock(ctx);
+
+				return {
+					type: ExpressionType.FUNCTION,
+					params,
+					body,
+				};
+			},
+			test: (expression) => expression.type == ExpressionType.FUNCTION,
+			handle: (expression, scope) => {
 				const fn = PlagueLanguage.createFunction(
-					statement.params,
-					statement.body,
+					expression.params,
+					expression.body,
 					scope
 				);
-				scope.set(statement.name, fn);
+
+				return fn;
 			},
-			test: (statement) => statement.type == StatementType.FUNCTION,
+		};
+
+		this.statement = {
+			case: (t) => t.type == TokenType.IDENTIFIER && t.value == "fn",
+
 			createStatement: (ctx) => {
 				const { iterator } = ctx;
 				iterator.expect(this.statement.case);
 				const name = iterator.expectResult(TokenType.IDENTIFIER).value;
-				const params = PlagueParser.parseBlock(
-					ctx,
-					() => {
-						const v = ctx.iterator.expectResult(
-							TokenType.IDENTIFIER
-						).value;
-						ctx.iterator.disposeIf("is", TokenType.COMMA);
-						return v;
-					},
-					TokenType.PAREN_LEFT,
-					TokenType.PAREN_RIGHT
-				);
-
-				const body = PlagueParser.parseBlock(ctx, () => {
-					return PlagueParser.parseStatement(ctx);
-				});
+				const params = FunctionPlugin.getParams(ctx);
+				const body = FunctionPlugin.getBlock(ctx);
 
 				return {
 					type: StatementType.FUNCTION,
@@ -102,6 +128,16 @@ export class FunctionPlugin extends PlaguePlugin<{
 					params,
 					body,
 				};
+			},
+			test: (statement) => statement.type == StatementType.FUNCTION,
+
+			handleStatement: (statement, scope) => {
+				const fn = PlagueLanguage.createFunction(
+					statement.params,
+					statement.body,
+					scope
+				);
+				scope.set(statement.name, fn);
 			},
 		};
 	}
@@ -117,17 +153,15 @@ export class ReturnPlugin extends PlaguePlugin<{
 
 		this.statement = {
 			case: (t) => t.type == TokenType.IDENTIFIER && t.value == "return",
-			// currently unused but left in PlagueLanguage.execStatement
+			test: (statement) => statement.type == StatementType.RETURN,
+
 			handleStatement: (statement, scope): void => {
-				console.log("HANDLING");
 				const value = statement.value
 					? PlagueLanguage.evaluateExpression(statement.value, scope)
 					: null;
 				throw { type: "return", value };
 			},
-			test: (statement) => statement.type == StatementType.RETURN,
-
-			createStatement: (ctx: PlagueParserContext) => {
+			createStatement: (ctx: ParserContext) => {
 				const { iterator } = ctx;
 				iterator.expect(this.statement!.case);
 				if (iterator.peek().type == TokenType.BRACE_RIGHT) {
@@ -207,6 +241,10 @@ export class IfPlugin extends PlaguePlugin<{
 	}
 }
 
+export type TableEntry =
+	| { key: string; value: Expression }
+	| { value: Expression };
+
 export class TablesPlugin extends PlaguePlugin<{
 	expression: {
 		type: ExpressionType.CUSTOM;
@@ -270,7 +308,59 @@ export class TablesPlugin extends PlaguePlugin<{
 				}
 
 				return {
-					type: DataTypes.OBJECT,
+					type: DataType.OBJECT,
+					value: obj,
+				};
+			},
+		};
+	}
+}
+
+export class VecPlugin extends PlaguePlugin<{
+	expression: {
+		type: ExpressionType.CUSTOM;
+		id: "vec";
+		data: Expression[];
+	};
+}> {
+	readonly id = "vec";
+
+	constructor() {
+		super();
+
+		this.primary_literal = {
+			case: (t) => t.type == TokenType.BRACKET_LEFT,
+			create: (ctx) => {
+				const entries: Expression[] = [];
+				const { iterator } = ctx;
+
+				while (iterator.peek().type !== TokenType.BRACKET_RIGHT) {
+					const value = PlagueParser.parseExpression(ctx);
+					entries.push(value);
+					iterator.disposeIf("is", TokenType.COMMA);
+				}
+
+				iterator.expect(TokenType.BRACKET_RIGHT);
+
+				return {
+					type: ExpressionType.CUSTOM,
+					id: this.id,
+					data: entries,
+				};
+			},
+			handle: (expression, scope) => {
+				const obj: DataValue[] = [];
+
+				for (const entry of expression.data) {
+					const value = PlagueLanguage.evaluateExpression(
+						entry,
+						scope
+					);
+					obj.push(value);
+				}
+
+				return {
+					type: DataType.ARRAY,
 					value: obj,
 				};
 			},
@@ -308,11 +398,9 @@ export class ForLoopPlugin extends PlaguePlugin<{
 					scope
 				);
 				const start =
-					start_value.type == DataTypes.NUMBER
-						? start_value.value
-						: 0;
+					start_value.type == DataType.NUMBER ? start_value.value : 0;
 				const end =
-					end_value.type == DataTypes.NUMBER ? end_value.value : 0;
+					end_value.type == DataType.NUMBER ? end_value.value : 0;
 				let calls: number = 0;
 				for (let i = start; i <= end; i++) {
 					calls++;
@@ -321,7 +409,7 @@ export class ForLoopPlugin extends PlaguePlugin<{
 					}
 				}
 			},
-			createStatement: (ctx: PlagueParserContext) => {
+			createStatement: (ctx: ParserContext) => {
 				const { iterator } = ctx;
 				iterator.expect(this.statement.case);
 				const name = iterator.expectResult(TokenType.IDENTIFIER).value;
@@ -348,9 +436,168 @@ export class ForLoopPlugin extends PlaguePlugin<{
 	}
 }
 
+enum CastEnum {
+	STRING = "string",
+	NUMBER = "number",
+	BOOLEAN = "boolean",
+}
+
+export class CastPlugin extends PlaguePlugin<{}> {
+	static handle(data: DataValue, name: string): DataValue {
+		switch (data.type) {
+			// number -> (new-type)
+			case DataType.NUMBER:
+				switch (name) {
+					case CastEnum.STRING:
+						return {
+							type: DataType.STRING,
+							value: String(data.value),
+						};
+					case CastEnum.BOOLEAN:
+						return {
+							type: DataType.BOOLEAN,
+							value: data.value != 0,
+						};
+				}
+				break;
+
+			// string -> (new-type)
+			case DataType.STRING:
+				switch (name) {
+					case CastEnum.NUMBER: {
+						const num = Number(data.value);
+						return {
+							type: DataType.NUMBER,
+							value: isNaN(num) ? 0 : num,
+						};
+					}
+					case CastEnum.BOOLEAN: {
+						if (data.value == String(true)) {
+							return { type: DataType.BOOLEAN, value: true };
+						} else if (data.value == String(false)) {
+							return { type: DataType.BOOLEAN, value: false };
+						} else {
+							return {
+								type: DataType.BOOLEAN,
+								value: data.value.trim().length > 0,
+							};
+						}
+					}
+				}
+				break;
+
+			case DataType.BOOLEAN:
+				switch (name) {
+					case CastEnum.NUMBER:
+						return {
+							type: DataType.NUMBER,
+							value: +data.value,
+						};
+
+					case CastEnum.STRING:
+						return {
+							type: DataType.STRING,
+							value: String(data.value),
+						};
+				}
+				break;
+		}
+
+		throw new Error("Cannot cast");
+	}
+
+	id = "cast";
+}
+
+export class CoreMethodsPlugin {
+	static READONLY_VARIABLE: VariableOptions = {
+		readonly: true,
+	};
+
+	static FN_PRINT = PlaguePlugin.wrapFunction(
+		"print",
+		{
+			type: DataType.FUNCTION,
+			call(args) {
+				console.log(
+					">>",
+					args.map((e) => ("value" in e ? e.value : Symbol("Custom")))
+				);
+				return { type: DataType.NULL, value: 0 };
+			},
+		},
+		CoreMethodsPlugin.READONLY_VARIABLE
+	);
+
+	static FN_LEN = PlaguePlugin.wrapFunction(
+		"len",
+		{
+			type: DataType.FUNCTION,
+			call: (args) => {
+				const v = args[0];
+
+				switch (v.type) {
+					// return { type: DataType.NUMBER, value: v.value.length }
+					case DataType.STRING:
+					case DataType.ARRAY:
+						return {
+							type: DataType.NUMBER,
+							value: v.value.length,
+						};
+
+					case DataType.OBJECT:
+						return {
+							type: DataType.NUMBER,
+							value: Object.keys(v.value).length,
+						};
+				}
+
+				return { type: DataType.NULL, value: 0 };
+			},
+		},
+		CoreMethodsPlugin.READONLY_VARIABLE
+	);
+
+	static FN_PUSH = PlaguePlugin.wrapFunction(
+		"push",
+		{
+			type: DataType.FUNCTION,
+			call: (args) => {
+				const v = args[0];
+
+				switch (v.type) {
+					case DataType.ARRAY: {
+						v.value.push(...args.slice(1));
+						return null;
+					}
+					case DataType.STRING: {
+						v.value.concat(
+							...args.slice(1).map((arg) => {
+								return arg.type == DataType.STRING
+									? arg.type
+									: "";
+							})
+						);
+						return null;
+					}
+				}
+
+				return { type: DataType.NULL, value: 0 };
+			},
+		},
+		CoreMethodsPlugin.READONLY_VARIABLE
+	);
+
+	static list: PlaguePlugin["values"] = () => [
+		this.FN_PRINT(),
+		this.FN_LEN(),
+	];
+}
+
 export const core_plugins: PlaguePlugin<any>[] = [
 	new VariablePlugin(),
 	new FunctionPlugin(),
 	new ReturnPlugin(),
 	new TablesPlugin(),
+	new VecPlugin(),
 ];

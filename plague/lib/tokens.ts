@@ -32,6 +32,8 @@ export enum TokenType {
 	IS, // `==` or `is`
 	NOT, //`!=` or `not`
 
+	CAST, // as
+
 	// grouping
 	PAREN_LEFT, // `)`
 	PAREN_RIGHT, // `)`
@@ -121,6 +123,7 @@ export interface OperatorToken
 		| TokenType.IS
 		| TokenType.NOT
 		| TokenType.EXCLAMATION
+		| TokenType.CAST
 	> {
 	value: string;
 }
