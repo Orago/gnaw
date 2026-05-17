@@ -1,10 +1,10 @@
 import { VecUtility } from "../language.js";
-import { SeparatorTokenType, TokenType } from "../tokens.js";
+import { SeparatorTokenType, TokenType } from "../../tokens.js";
 import {
 	LanguageHandler,
 	LanguageHook,
 	type HandlerContext,
-} from "../utility/handlers.js";
+} from "./utility/handlers.js";
 
 export enum VariableType {
 	NULL = "null",
@@ -48,7 +48,6 @@ export type VariableLike =
 	  };
 
 export class LanguageHandler_Variables extends LanguageHandler {
-	id = "variables";
 	variables: Partial<Record<string, VariableLike>> = {
 		orago: {
 			type: VariableType.STRING,
@@ -57,7 +56,7 @@ export class LanguageHandler_Variables extends LanguageHandler {
 	};
 
 	constructor() {
-		super();
+		super("variables");
 
 		this.line_hooks.push({
 			test: (ref) => {
@@ -89,11 +88,11 @@ export class LanguageHandler_Variables extends LanguageHandler {
 		}
 	}
 
-	private getName(blob: HandlerContext): string | false {
-		const capture = VecUtility.captureVec(blob.language, blob.iterator);
+	private getName(ctx: HandlerContext): string | false {
+		const capture = VecUtility.captureVec(ctx.language, ctx.iterator);
 
 		if (capture[1] == 0 || capture[0].length != 1) {
-			blob.language.error("Invalid thingymadingy");
+			ctx.language.error("Invalid thingymadingy");
 			return false;
 		}
 
@@ -110,15 +109,15 @@ export class LanguageHandler_Variables extends LanguageHandler {
 		return false;
 	}
 
-	handleValue(blob: HandlerContext): VariableLike | false {
+	handleValue(ctx: HandlerContext): VariableLike | false {
 		if (
-			blob.iterator.disposeIf(
+			ctx.iterator.disposeIf(
 				"is",
 				(token) =>
 					token.type == TokenType.IDENTIFIER && token.value == "ref"
 			)
 		) {
-			const variable_name = this.getName(blob);
+			const variable_name = this.getName(ctx);
 
 			if (variable_name == false) {
 				return false;
@@ -129,13 +128,13 @@ export class LanguageHandler_Variables extends LanguageHandler {
 				value: variable_name,
 			};
 		} else if (
-			blob.iterator.disposeIf(
+			ctx.iterator.disposeIf(
 				"is",
 				(token) =>
 					token.type == TokenType.IDENTIFIER && token.value == "var"
 			)
 		) {
-			const variable_name = this.getName(blob);
+			const variable_name = this.getName(ctx);
 
 			if (variable_name == false) {
 				return false;
@@ -147,8 +146,9 @@ export class LanguageHandler_Variables extends LanguageHandler {
 		return false;
 	}
 
-	handleLineRun({ language, iterator: line }: HandlerContext): void {
-		const variable_name = line.next();
+	handleLineRun(ctx: HandlerContext): void {
+		const { language, iterator } = ctx;
+		const variable_name = iterator.advance();
 
 		if (variable_name?.value?.type != TokenType.IDENTIFIER) {
 			language.error("Required identifier");
@@ -160,18 +160,18 @@ export class LanguageHandler_Variables extends LanguageHandler {
 			value: "",
 		} as any;
 
-		if (line.disposeIf("is", TokenType.COLON)) {
+		if (iterator.disposeIf("is", TokenType.COLON)) {
 			language.error("Variables with types aren't handled yet");
 			return;
 		}
 
-		if (line.disposeIf("is", TokenType.EQUAL)) {
+		if (iterator.disposeIf("is", TokenType.EQUAL)) {
 		} else {
 			language.error(`VAR(${variable_name.value.value}), Missing =`);
 			return;
 		}
 
-		const got = language.expectValue(line);
+		const got = language.expectValue(iterator);
 
 		if (variable.type != VariableType.ANY && got.type != variable.type) {
 			language.error("Variable type mismatch");
@@ -180,7 +180,7 @@ export class LanguageHandler_Variables extends LanguageHandler {
 
 		this.variables[variable_name.value.value] = got;
 
-		const next = line.next()?.value;
+		const next = iterator.advance()?.value;
 
 		if ((next?.type == TokenType.SEMICOLON) != true) {
 			language.error("Missing variable ender");
@@ -190,7 +190,6 @@ export class LanguageHandler_Variables extends LanguageHandler {
 }
 
 export class LanguageHandler_Events extends LanguageHandler {
-	id = "event_handling";
 	variables: Partial<Record<string, VariableLike>> = {
 		orago: {
 			type: VariableType.STRING,
@@ -199,7 +198,7 @@ export class LanguageHandler_Events extends LanguageHandler {
 	};
 
 	constructor() {
-		super();
+		super("event_handling");
 
 		this.line_hooks.push({
 			test: (ref) => {

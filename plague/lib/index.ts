@@ -1,32 +1,14 @@
-import { Language } from "./language.js";
-import {
-	LanguageHandler_Events,
-	LanguageHandler_Variables,
-} from "./plugins/variables.js";
+import { PlagueLanguage } from "./lang/plague-lang-main.js";
+import { Lexer } from "./lexer.js";
+import TokenIterator from "./token-iterator.js";
+import { TokenType } from "./tokens.js";
 
-const text = `
-let cat = 5;
-let test_reference = ref(cat);
-let pluh = ref(test_reference);
-let meow = var(pluh);
+const script = `let cat = "mittens"`;
+const script2 = `let cat = "mittens"`;
 
-on player_join
-	log("hello!" + var(cat))
+// const lexed = Lexer.lex(script);
+// const tokens = Lexer.tokenize(lexed, {});
 
-on player_message
-	if message == "hi":
-		log("yes!")
-`;
-
-const language = new Language();
-
-language.handlers.inject([
-	new LanguageHandler_Variables(),
-	new LanguageHandler_Events(),
-]);
-try {
-	language.eval(text);
-} catch (e) {
-	console.error(e);
-}
-console.log(language.handlers.get("variables"));
+// const iter = new TokenIterator(tokens);
+const language = new PlagueLanguage().parseString(script);
+console.log(JSON.stringify(language, null, 2));

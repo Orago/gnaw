@@ -1,6 +1,6 @@
-import type TokenIterator from "../iterable.js";
-import type { Language } from "../language.js";
-import type { VariableLike } from "../plugins/variables.js";
+import type TokenIterator from "../../../token-iterator.js";
+import type { Language } from "../../language.js";
+import type { VariableLike } from "../variables.js";
 
 export interface HandlerContext {
 	language: Language;
@@ -13,10 +13,11 @@ export interface LanguageHook {
 	run(blob: HandlerContext): void;
 }
 export abstract class LanguageHandler {
-	abstract id: string;
+	// abstract id: string;
 	declare identifier_hook?: string[];
-
 	line_hooks: LanguageHook[] = [];
+
+	constructor(public id: string) {}
 
 	/** Unused */
 	handleIdentifier?(blob: HandlerContext): VariableLike | false;

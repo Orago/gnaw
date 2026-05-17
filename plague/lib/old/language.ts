@@ -1,20 +1,15 @@
-import TokenIterator from "./iterable.js";
+import TokenIterator from "../token-iterator.js";
 import {
 	default_language_dicitionary,
 	type LanguageDictionary,
 	Lexer,
-} from "./lexer.js";
+} from "../lexer.js";
 import { type VariableLike, VariableType } from "./plugins/variables.js";
-import {
-	type AnyToken,
-	SeparatorTokenType,
-	TokenGroup,
-	TokenType,
-} from "./tokens.js";
+import { type AnyToken, TokenGroup, TokenType } from "../tokens.js";
 import {
 	type HandlerContext,
 	LanguageHandlerList,
-} from "./utility/handlers.js";
+} from "./plugins/utility/handlers.js";
 
 export class LineUtility {
 	static captureIndentCount(iterator: TokenIterator): number {
@@ -24,7 +19,7 @@ export class LineUtility {
 			const token = iterator.peek().value;
 
 			if (token && token.type == TokenType.INDENT) {
-				iterator.next();
+				iterator.advance();
 				count++;
 			} else {
 				break;
@@ -94,7 +89,7 @@ export class VecUtility {
 
 			if (expect_comma == true && iterator.match(TokenType.COMMA)) {
 				expect_comma = false;
-				iterator.next();
+				iterator.advance();
 				continue;
 			}
 		}
@@ -113,7 +108,6 @@ export class Language {
 	chunkTokens(tokens: AnyToken[]) {
 		const chunks: AnyToken[][] = [];
 		let chunk: AnyToken[] = [];
-
 		let scope_depth: number = 0;
 
 		for (const token of tokens) {
@@ -170,7 +164,7 @@ export class Language {
 		let indent: number = 0;
 
 		while (true) {
-			next = iterator.next();
+			next = iterator.advance();
 
 			if (next.done == true || next.value == undefined) {
 				break;
@@ -206,7 +200,7 @@ export class Language {
 			}
 		}
 
-		const next = iterator.next();
+		const next = iterator.advance();
 		const token = next?.value;
 
 		switch (token?.type) {

@@ -29,6 +29,8 @@ export enum TokenType {
 	GREATER_THAN, // `>`
 	LESS_THAN, // `<`
 	EXCLAMATION, // `!`
+	IS, // `==` or `is`
+	NOT, //`!=` or `not`
 
 	// grouping
 	PAREN_LEFT, // `)`
@@ -116,9 +118,14 @@ export interface OperatorToken
 		| TokenType.STAR
 		| TokenType.SLASH
 		| TokenType.EQUAL
+		| TokenType.IS
+		| TokenType.NOT
+		| TokenType.EXCLAMATION
 	> {
 	value: string;
 }
+
+export interface EOFToken extends BaseToken<undefined, TokenType.EOF> {}
 
 export interface PunctuationToken
 	extends BaseToken<
@@ -157,4 +164,5 @@ export type AnyToken =
 	| OperatorToken
 	| IdentifierToken
 	| PunctuationToken
-	| DelimiterToken;
+	| DelimiterToken
+	| EOFToken;

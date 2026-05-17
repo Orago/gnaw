@@ -2,9 +2,7 @@ import {
 	AnyToken,
 	DelimiterToken,
 	OperatorToken,
-	OperatorTokenType,
 	PunctuationToken,
-	SeparatorTokenType,
 	TokenGroup,
 	TokenType,
 } from "./tokens.js";
@@ -17,6 +15,19 @@ export interface LanguageDictionary extends Record<string, string[]> {
 	bracket_right: string[];
 	parenthesis_left: string[];
 	parenthesis_right: string[];
+
+	// operators
+	plus: string[];
+	minus: string[];
+	star: string[];
+	slash: string[];
+	equals: string[];
+	greater_than: string[];
+	less_than: string[];
+	exclamation: string[];
+
+	is: string[];
+	not: string[];
 
 	// punctuation
 	comma: string[];
@@ -48,10 +59,13 @@ export const default_language_dicitionary: LanguageDictionary = {
 	minus: ["-"],
 	star: ["*"],
 	slash: ["/"],
-	equal: ["="],
+	equals: ["="],
 	greater_than: [">"],
 	less_than: ["<"],
 	exclamation: ["!"],
+
+	is: ["==", "is"],
+	not: ["!=", "not"],
 
 	// punctuation
 	comma: [","],
@@ -136,7 +150,7 @@ export class Lexer {
 	}
 
 	private static _parseOperator(
-		value: string
+		value: string | undefined
 	): OperatorToken["type"] | undefined {
 		switch (value) {
 			case "+":
@@ -149,6 +163,9 @@ export class Lexer {
 				return TokenType.SLASH;
 			case "=":
 				return TokenType.EQUAL;
+
+			case "!":
+				return TokenType.EXCLAMATION;
 			default:
 				return undefined;
 		}
@@ -195,25 +212,27 @@ export class Lexer {
 	}
 
 	static parseToken(
+		lexed: string[],
 		value: string,
+		index: number,
 		level: number,
 		keywords: LanguageDictionary
-	): { token: AnyToken; level: number } {
+	): { token: AnyToken; level: number; index: number } {
 		let token: AnyToken;
 		let tmptoken: TokenType | undefined;
 
 		if (keywords.brace_left.includes(value)) {
 			token = {
-				group: TokenGroup.DELIMITER,
 				type: TokenType.BRACE_LEFT,
+				group: TokenGroup.DELIMITER,
 				raw: value,
 				value,
 				level: ++level,
 			};
 		} else if (keywords.brace_right.includes(value)) {
 			token = {
-				group: TokenGroup.DELIMITER,
 				type: TokenType.BRACE_RIGHT,
+				group: TokenGroup.DELIMITER,
 				raw: value,
 				value,
 				level: level--,
@@ -222,14 +241,13 @@ export class Lexer {
 			(tmptoken = this._parseDelimiter(value, keywords)) != undefined
 		) {
 			token = {
-				group: TokenGroup.DELIMITER,
 				type: tmptoken,
+				group: TokenGroup.DELIMITER,
 				raw: value,
 				value,
 			};
 		} else if (TypeHandler.isString(value)) {
 			token = {
-				// group: TokenGroup.STRING,
 				type: TokenType.STRING,
 				raw: value,
 				value: TypeHandler.parseString(value) ?? "",
@@ -238,39 +256,69 @@ export class Lexer {
 			(tmptoken = this._parsePunctuation(value, keywords)) != undefined
 		) {
 			token = {
-				group: TokenGroup.PUNCTUATION,
 				type: tmptoken,
+				group: TokenGroup.PUNCTUATION,
 				raw: value,
 				value,
 			};
 		} else if (!isNaN(Number.parseFloat(value))) {
 			token = {
-				// group: TokenGroup.NUMBER,
 				type: TokenType.NUMBER,
 				raw: value,
 				value: Number.parseFloat(value),
 			};
 		} else if (keywords.boolean_true.includes(value)) {
 			token = {
-				group: TokenGroup.BOOLEAN,
 				type: TokenType.NUMBER,
+				group: TokenGroup.BOOLEAN,
 				raw: value,
 				value: +true as 1,
 			};
 		} else if (keywords.boolean_false.includes(value)) {
 			token = {
-				group: TokenGroup.BOOLEAN,
 				type: TokenType.NUMBER,
+				group: TokenGroup.BOOLEAN,
 				raw: value,
 				value: +false as 0,
 			};
+		} else if (keywords.is.includes(value)) {
+			token = {
+				type: TokenType.IS,
+				value,
+				raw: value,
+			};
+		} else if (keywords.not.includes(value)) {
+			token = {
+				type: TokenType.IS,
+				value,
+				raw: value,
+			};
 		} else if ((tmptoken = this._parseOperator(value)) != undefined) {
 			token = {
-				group: TokenGroup.OPERATOR,
 				type: tmptoken,
+				group: TokenGroup.OPERATOR,
 				raw: value,
 				value,
 			};
+
+			const next_value = lexed[index + 1];
+			const next_token = this._parseOperator(next_value);
+			if (next_token != undefined) {
+				const matching = (left: TokenType, right: TokenType) =>
+					token.type == left && next_token == right;
+
+				if (matching(TokenType.EQUAL, TokenType.EQUAL)) {
+					token.type = TokenType.IS;
+					token.value = token.value + next_value;
+					token.raw = token.value;
+					index++;
+				} else if (matching(TokenType.EXCLAMATION, TokenType.EQUAL)) {
+					token.type = TokenType.NOT;
+					token.value = token.value + next_value;
+					token.raw = token.value;
+					index++;
+				}
+			}
 		} else if (value != "\t" && value != "\r") {
 			token = {
 				type: TokenType.IDENTIFIER,
@@ -282,6 +330,7 @@ export class Lexer {
 		return {
 			token: token!,
 			level,
+			index,
 		};
 	}
 
@@ -295,16 +344,24 @@ export class Lexer {
 		const tokens: AnyToken[] = [];
 		let level: number = 0;
 
-		for (const value of lexed) {
-			const { token, level: new_level } = this.parseToken(
-				value,
-				level,
-				keywords
-			);
+		for (let i = 0; i < lexed.length; i++) {
+			const value = lexed[i];
+			const {
+				token,
+				level: new_level,
+				index,
+			} = this.parseToken(lexed, value, i, level, keywords);
 
-			tokens.push(token);
 			level = new_level;
+
+			i = index;
+			tokens.push(token);
 		}
+
+		tokens.push({
+			type: TokenType.EOF,
+			raw: "EOF",
+		});
 
 		return tokens;
 	}
