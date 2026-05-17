@@ -63,7 +63,9 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 	}
 
 	clone() {
-		return new TokenIterator(this.items as T[], this.settings);
+		const iter = new TokenIterator(this.items as T[], this.settings);
+		iter.offset = this.offset;
+		return iter;
 	}
 
 	match(check: IterableCheck<T>, n = 1) {

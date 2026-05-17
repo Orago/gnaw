@@ -8,7 +8,13 @@ export enum DataTypes {
 	IDENTIFIER = "identifier",
 	CUSTOM = "custom",
 	BOOLEAN = "boolean",
+	FUNCTION = "function",
 }
+
+export type FunctionDataValue = {
+	type: DataTypes.FUNCTION;
+	call: (args: DataValue[]) => DataValue;
+};
 
 export type DataValue =
 	| { type: DataTypes.NULL; value: 0 }
@@ -19,4 +25,5 @@ export type DataValue =
 	| { type: DataTypes.OBJECT; value: Record<string, DataValue> }
 	| { type: DataTypes.IDENTIFIER; value: string }
 	| { type: DataTypes.CUSTOM; id: any; value: any }
-	| { type: DataTypes.BOOLEAN; value: boolean };
+	| { type: DataTypes.BOOLEAN; value: boolean }
+	| FunctionDataValue;

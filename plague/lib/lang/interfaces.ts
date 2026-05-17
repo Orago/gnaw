@@ -1,13 +1,6 @@
-export enum ExpressionType {
-	NUMBER,
-	STRING,
-	BOOLEAN,
-	IDENTIFIER,
-
-	CallExpression,
-	MemberAccess,
-	Binary,
-}
+import type TokenIterator from "../token-iterator.js";
+import type { PlaguePlugin } from "./plugin-utility.js";
+import { PlagueSystem } from "./states.js";
 
 export enum BinaryMethod {
 	ADD,
@@ -36,6 +29,11 @@ export type CustomStatement<T extends any = any> = {
 	data: T;
 };
 
+export type ReturnStatement = {
+	type: StatementType.RETURN;
+	value?: Expression;
+};
+
 export type Statement =
 	| CustomStatement
 	| { type: StatementType.VARIABLE; name: string; value: Expression }
@@ -46,11 +44,11 @@ export type Statement =
 			params: string[];
 			body: Statement[];
 	  }
-	| { type: StatementType.RETURN; value?: Expression }
+	| ReturnStatement
 	| {
 			type: StatementType.IF;
 			condition: Expression;
-			then: Statement[];
+			body: Statement[];
 			else?: Statement[];
 	  }
 	| {
@@ -61,15 +59,41 @@ export type Statement =
 			body: Statement[];
 	  };
 
+export enum ExpressionType {
+	NUMBER,
+	STRING,
+	BOOLEAN,
+	IDENTIFIER,
+
+	CallExpression,
+	MemberAccess,
+	Binary,
+
+	TABLE,
+	ASSIGN,
+
+	CUSTOM,
+}
+
+export type TableEntry =
+	| { key: string; value: Expression }
+	| { value: Expression };
+
+export type CustomExpression<T extends any = any> = {
+	type: ExpressionType.CUSTOM;
+	id: string;
+	data: T;
+};
+
 export type Expression =
+	| CustomExpression
 	| { type: ExpressionType.NUMBER; value: number }
 	| { type: ExpressionType.STRING; value: string }
 	| { type: ExpressionType.BOOLEAN; value: boolean }
 	| { type: ExpressionType.IDENTIFIER; name: string }
+	| { type: ExpressionType.ASSIGN; target: Expression; value: Expression }
 	| {
 			type: ExpressionType.Binary;
-			// initial: DataValue;
-			// operatiosn: [method: BinaryExpressionMethod, value: DataValue][];
 			left: Expression;
 			op: BinaryMethod;
 			right: Expression;
@@ -82,5 +106,11 @@ export type Expression =
 	| {
 			type: ExpressionType.MemberAccess;
 			object: Expression;
-			property: string;
-	  };
+			property: Expression;
+	  }
+	| { type: ExpressionType.TABLE; entries: TableEntry[] };
+
+export interface PlagueParserContext {
+	iterator: TokenIterator;
+	system: PlagueSystem;
+}

@@ -365,4 +365,16 @@ export class Lexer {
 
 		return tokens;
 	}
+
+	static including(list: AnyToken[], include: TokenType[]): AnyToken[] {
+		return list.filter((token) => {
+			return include.includes(token.type);
+		});
+	}
+	
+	static excluding(list: AnyToken[], exclude: TokenType[]): AnyToken[] {
+		return list.filter((token) => {
+			return exclude.includes(token.type) != true;
+		});
+	}
 }
