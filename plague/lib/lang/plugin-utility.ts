@@ -3,14 +3,16 @@ import type { AnyToken } from "../tokens.js";
 import {
 	type CustomStatement,
 	Expression,
-	type PlagueParserContext,
+	type ParserContext,
 	type Statement,
 	StatementType,
 	VariableOptions,
 } from "./interfaces.js";
-import { PlagueScope } from "./states.js";
+import { DataScope } from "./states.js";
 import { DataValue } from "./variables.js";
+
 export type PlagueFNCallback = () => [string, DataValue, VariableOptions?];
+
 export abstract class PlaguePlugin<
 	Opts extends {
 		statement?: Statement;
@@ -28,26 +30,24 @@ export abstract class PlaguePlugin<
 			return () => [name, data];
 		}
 	}
-	// static Statement = PlaguePluginStatement;
+
 	static ownsStatement(plugin: PlaguePlugin, statement: Statement): boolean {
 		return (
-			statement.type == StatementType.CUSTOM_PLUGIN &&
-			statement.id == plugin.id
+			statement.type == StatementType.CUSTOM && statement.id == plugin.id
 		);
 	}
 	abstract id: string;
 
-	// abstract statement: PlaguePluginStatement
 	// * Primary
 	declare primary_literal?: Opts["expression"] extends undefined
 		? never
 		: {
 				case: (t: AnyToken) => boolean;
-				create: (ctx: PlagueParserContext) => Opts["expression"];
+				create: (ctx: ParserContext) => Opts["expression"];
 				test?: (expression: Expression) => boolean;
 				handle: (
 					expression: Opts["expression"],
-					scope: PlagueScope
+					scope: DataScope
 				) => DataValue;
 		  };
 
@@ -57,14 +57,12 @@ export abstract class PlaguePlugin<
 		? never
 		: {
 				case: IterableCheck<AnyToken>;
-				createStatement: (
-					ctx: PlagueParserContext
-				) => Opts["statement"];
+				createStatement: (ctx: ParserContext) => Opts["statement"];
 
 				test?: (statement: Statement) => boolean;
 				handleStatement: (
 					statement: Opts["statement"],
-					scope: PlagueScope
+					scope: DataScope
 				) => any;
 		  };
 
@@ -74,7 +72,7 @@ export abstract class PlaguePlugin<
 
 	protected formatStatement<T extends any>(data: T): CustomStatement<T> {
 		return {
-			type: StatementType.CUSTOM_PLUGIN,
+			type: StatementType.CUSTOM,
 			id: this.id,
 			data,
 		};

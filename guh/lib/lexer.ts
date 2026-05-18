@@ -49,8 +49,8 @@ export const default_language_dicitionary: LanguageDictionary = {
 	star: ["*"],
 	slash: ["/"],
 	equal: ["="],
-	greater_than: [">"],
 	less_than: ["<"],
+	greater_than: [">"],
 	exclamation: ["!"],
 
 	// punctuation

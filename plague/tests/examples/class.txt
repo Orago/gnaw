@@ -1,0 +1,14 @@
+class Point {
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+  }
+
+  add(n) {
+    return this.x + n
+  }
+}
+
+p = Point(2, 3)
+print(p.add(5))
+

@@ -12,7 +12,7 @@ import {
 import { Parser } from "./parser.js";
 import { PlagueLanguage } from "./language.js";
 import { PlaguePlugin } from "./plugin-utility.js";
-import { DataType, DataValue, DataValueOf, Var } from "./variables.js";
+import { DataType, DataValue, Var } from "./variables.js";
 
 export class VariablePlugin extends PlaguePlugin<{
 	statement: {
@@ -66,8 +66,13 @@ export class FunctionPlugin extends PlaguePlugin<{
 	id = "function";
 
 	static getParams(ctx: ParserContext) {
-		return Parser.parseParameters(
+		return Parser.parseBlock(
 			ctx,
+			() => {
+				const v = ctx.iterator.expectResult(TokenType.IDENTIFIER).value;
+				ctx.iterator.disposeIf("is", TokenType.COMMA);
+				return v;
+			},
 			TokenType.PAREN_LEFT,
 			TokenType.PAREN_RIGHT
 		);
@@ -147,10 +152,17 @@ export class ReturnPlugin extends PlaguePlugin<{
 
 		this.statement = {
 			case: (t) => t.type == TokenType.IDENTIFIER && t.value == "return",
+			test: (statement) => statement.type == StatementType.RETURN,
 
+			handleStatement: (statement, scope): void => {
+				const value = statement.value
+					? PlagueLanguage.evaluateExpression(statement.value, scope)
+					: null;
+				throw { type: "return", value };
+			},
 			createStatement: (ctx: ParserContext) => {
 				const { iterator } = ctx;
-				iterator.expect(this.statement.case);
+				iterator.expect(this.statement!.case);
 				if (iterator.peek().type == TokenType.BRACE_RIGHT) {
 					return { type: StatementType.RETURN };
 				} else {
@@ -159,15 +171,6 @@ export class ReturnPlugin extends PlaguePlugin<{
 						value: Parser.parseExpression(ctx),
 					};
 				}
-			},
-
-			test: (statement) => statement.type == StatementType.RETURN,
-			handleStatement: (statement, scope): void => {
-				const value = statement.value
-					? PlagueLanguage.evaluateExpression(statement.value, scope)
-					: null;
-
-				PlagueLanguage.functionReturn(value);
 			},
 		};
 	}
@@ -194,7 +197,10 @@ export class IfPlugin extends PlaguePlugin<{
 				iterator.expect(this.statement.case);
 
 				const condition = Parser.parseExpression(ctx);
-				const main_block: Statement[] = Parser.parseStatementBlock(ctx);
+				console.log("left", [...iterator.clone()]);
+				const main_block: Statement[] = Parser.parseBlock(ctx, () => {
+					return Parser.parseStatement(ctx);
+				});
 
 				let else_block: Statement[] = [];
 
@@ -205,7 +211,9 @@ export class IfPlugin extends PlaguePlugin<{
 							t.type == TokenType.IDENTIFIER && t.value == "else"
 					)
 				) {
-					else_block = Parser.parseStatementBlock(ctx);
+					else_block = Parser.parseBlock(ctx, () => {
+						return Parser.parseStatement(ctx);
+					});
 				}
 
 				return {
@@ -221,10 +229,8 @@ export class IfPlugin extends PlaguePlugin<{
 					statement.condition,
 					scope
 				);
-				if (
-					condition.type == DataType.BOOLEAN &&
-					condition.value == true
-				) {
+				console.log("muh", condition, statement);
+				if (condition) {
 					PlagueLanguage.execManyStatements(statement.body, scope);
 				} else if (statement.else != undefined) {
 					PlagueLanguage.execManyStatements(statement.else, scope);
@@ -257,15 +263,13 @@ export class TablesPlugin extends PlaguePlugin<{
 				const { iterator } = ctx;
 
 				while (iterator.peek().type !== TokenType.BRACE_RIGHT) {
-					// if (
-					// 	iterator.peek().type === TokenType.IDENTIFIER &&
-					// 	iterator.peek(1).type === TokenType.PAREN_LEFT
-					// ) {
-					// 	TablesPlugin.handleInlineMethod(ctx, entries);
-					// 	continue;
-					// } else
-
 					if (
+						iterator.peek().type === TokenType.IDENTIFIER &&
+						iterator.peek(1).type === TokenType.PAREN_LEFT
+					) {
+						TablesPlugin.handleInlineMethod(ctx, entries);
+						continue;
+					} else if (
 						iterator.peek().type == TokenType.IDENTIFIER &&
 						iterator.peek(1).type == TokenType.EQUAL
 					) {
@@ -339,21 +343,19 @@ export class TablesPlugin extends PlaguePlugin<{
 	}
 }
 
-interface ClassStatement {
-	type: StatementType.CUSTOM;
-	id: "class";
-	data: {
-		name: string;
-		methods: {
-			[name: string]: {
+export class ClassPlugin extends PlaguePlugin<{
+	statement: {
+		type: StatementType.CUSTOM;
+		id: "class";
+		data: {
+			name: string;
+			methods: {
+				name: string;
 				params: string[];
 				body: Statement[];
-			};
+			}[];
 		};
 	};
-}
-export class ClassPlugin extends PlaguePlugin<{
-	statement: ClassStatement;
 }> {
 	readonly id = "class";
 
@@ -365,29 +367,32 @@ export class ClassPlugin extends PlaguePlugin<{
 
 			createStatement: (ctx) => {
 				const { iterator } = ctx;
-				iterator.expect(this.statement.case);
 				const class_name = iterator.expectResult(
 					TokenType.IDENTIFIER
 				).value;
+				iterator.expect(TokenType.BRACE_LEFT);
+				const methods = [];
 
-				const methods: ClassStatement["data"]["methods"] = {};
-				Parser.parseBlock(ctx, () => {
+				while (!iterator.disposeIf("is", TokenType.BRACE_RIGHT)) {
 					const method_name = iterator.expectResult(
 						TokenType.IDENTIFIER
 					).value;
+
 					const params = Parser.parseParameters(ctx);
+
 					const body = Parser.parseBlock(ctx, () => {
 						return Parser.parseStatement(ctx);
 					});
-					methods[method_name] = { params, body };
-				});
+
+					methods.push({ name: method_name, params, body });
+				}
 
 				return {
 					type: StatementType.CUSTOM,
 					id: this.id,
 					data: {
 						name: class_name,
-						methods: methods,
+						methods,
 					},
 				};
 			},
@@ -397,29 +402,37 @@ export class ClassPlugin extends PlaguePlugin<{
 
 			handleStatement: (statement, scope_ref) => {
 				const { methods, name: class_name } = statement.data;
+				const method_map = new Map(methods.map((m) => [m.name, m]));
+
+				const constructor_method = method_map.get("constructor");
 
 				const class_fn = Var.Function((args) => {
-					const obj = Var.Object<DataValueOf<DataType.FUNCTION>>({});
+					const obj = Var.Object({});
 
-					for (const [name, m] of Object.entries(methods)) {
-						obj.value[name] = Var.Function((call_args) => {
+					// attach methods
+					for (const m of methods) {
+						obj.value[m.name] = Var.Function((call_args) => {
 							const method_scope = scope_ref.extend();
-							method_scope.set("this", obj); //? this value
+
+							// inject this
+							method_scope.set("this", obj);
 
 							// bind params
 							m.params.forEach((p, i) => {
-								method_scope.set(p, call_args[i + 1]);
+								method_scope.set(p, call_args[i + 1]); // skip this
 							});
 
-							return PlagueLanguage.processFunction(
+							PlagueLanguage.execManyStatements(
 								m.body,
 								method_scope
 							);
+
+							return;
 						});
 					}
 
-					// call constructor if there is one
-					if (obj.value["constructor"] != undefined) {
+					// call constructor if exists
+					if (constructor_method) {
 						obj.value["constructor"].call([obj, ...args]);
 					}
 
@@ -523,15 +536,11 @@ export class ForLoopPlugin extends PlaguePlugin<{
 
 				for (let i = start; i <= end; i++) {
 					calls++;
-					if (calls++ > this.max_calls)
+					if (calls++ > this.max_calls) {
 						throw new Error("Too many for-loop calls!");
+					}
 
-					local_scope.set(statement.data.name, Var.Number(i));
-
-					PlagueLanguage.execManyStatements(
-						statement.data.body,
-						local_scope
-					);
+					// local_scope.set(statement.data.name, )
 				}
 			},
 			createStatement: (ctx: ParserContext) => {
@@ -658,5 +667,4 @@ export const core_plugins: PlaguePlugin<any>[] = [
 	new VecPlugin(),
 	new ForLoopPlugin(),
 	new IfPlugin(),
-	new ClassPlugin(),
 ];

@@ -9,7 +9,7 @@ type CastDict = {
 };
 
 export class TypeCasts {
-	static FromTo = {
+	static from__to = {
 		[DataType.NUMBER]: {
 			[DataType.STRING]: (data) => Var.String(String(data.value)),
 			[DataType.BOOLEAN]: (data) => Var.Boolean(data.value != 0),
@@ -39,7 +39,7 @@ export class TypeCasts {
 		from: DataValue,
 		to: T
 	): DataValueOf<T> | undefined {
-		const from_map = (this.FromTo as any)[(from as any).type];
+		const from_map = (this.from__to as any)[(from as any).type];
 		if (!from_map) return;
 		const cb = from_map[to];
 		if (!cb) return;
@@ -54,5 +54,22 @@ export class TypeCasts {
 			TypeCasts.convert(from, to) ??
 			(Var.defaults[to]() as DataValueOf<T>)
 		);
+	}
+
+	static cast_map: Partial<Record<string, DataType>> = {
+		string: DataType.STRING,
+		number: DataType.NUMBER,
+		boolean: DataType.BOOLEAN,
+	};
+
+	static cast(data: DataValue, name: string) {
+		const dt = TypeCasts.cast_map[name];
+		if (dt != undefined) {
+			const p = TypeCasts.convert(data, dt);
+
+			if (p != undefined) return p;
+		}
+
+		throw new Error("Cannot cast");
 	}
 }

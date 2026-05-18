@@ -26,11 +26,13 @@ export enum TokenType {
 	STAR, // `*`
 	SLASH, // `/`
 	EQUAL, // `=`
-	GREATER_THAN, // `>`
 	LESS_THAN, // `<`
+	GREATER_THAN, // `>`
 	EXCLAMATION, // `!`
 	IS, // `==` or `is`
 	NOT, //`!=` or `not`
+	AND, // `&&` or `and`
+	OR, // `||` or `or`
 
 	CAST, // as
 
@@ -51,37 +53,7 @@ export enum TokenType {
 	INDENT, // `\t`
 
 	EOF,
-}
-
-export enum OperatorTokenType {
-	PLUS,
-	MINUS,
-	STAR,
-	SLASH,
-	EQUAL,
-}
-
-export enum SeparatorTokenType {
-	LINE_END,
-	NEW_LINE,
-	INDENT,
-	RETURN,
-
-	// grouping
-	BRACKET_LEFT,
-	BRACKET_RIGHT,
-	BRACE_LEFT,
-	BRACE_RIGHT,
-	PAREN_LEFT,
-	PAREN_RIGHT,
-
-	// punctuation
-	COMMA,
-	DOT,
-	COLON,
-	SEMICOLON,
-
-	EOF,
+	COMMENT,
 }
 
 export interface BaseToken<
@@ -94,6 +66,9 @@ export interface BaseToken<
 	// value: string;
 }
 
+export interface CommentToken extends BaseToken<undefined, TokenType.COMMENT> {
+	value: string;
+}
 export interface StringToken extends BaseToken<undefined, TokenType.STRING> {
 	value: string;
 }
@@ -124,6 +99,8 @@ export interface OperatorToken
 		| TokenType.NOT
 		| TokenType.EXCLAMATION
 		| TokenType.CAST
+		| TokenType.LESS_THAN
+		| TokenType.GREATER_THAN
 	> {
 	value: string;
 }
@@ -161,6 +138,7 @@ export interface DelimiterToken
 }
 
 export type AnyToken =
+	| CommentToken
 	| StringToken
 	| NumberToken
 	| BooleanToken

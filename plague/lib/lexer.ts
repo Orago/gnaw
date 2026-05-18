@@ -152,25 +152,30 @@ export class Lexer {
 	}
 
 	private static _parseOperator(
-		value: string | undefined
+		value: string | undefined,
+		keywords: LanguageDictionary
 	): OperatorToken["type"] | undefined {
-		switch (value) {
-			case "+":
-				return TokenType.PLUS;
-			case "-":
-				return TokenType.MINUS;
-			case "*":
-				return TokenType.STAR;
-			case "/":
-				return TokenType.SLASH;
-			case "=":
-				return TokenType.EQUAL;
+		if (value == undefined) return undefined;
 
-			case "!":
-				return TokenType.EXCLAMATION;
-			default:
-				return undefined;
+		if (keywords.plus.includes(value)) {
+			return TokenType.PLUS; // `+`
+		} else if (keywords.minus.includes(value)) {
+			return TokenType.MINUS; // `-`
+		} else if (keywords.star.includes(value)) {
+			return TokenType.STAR; // `*`
+		} else if (keywords.slash.includes(value)) {
+			return TokenType.SLASH; // `/`
+		} else if (keywords.equals.includes(value)) {
+			return TokenType.EQUAL; // `=`
+		} else if (keywords.exclamation.includes(value)) {
+			return TokenType.EXCLAMATION; // `!`
+		} else if (keywords.less_than.includes(value)) {
+			return TokenType.LESS_THAN; // `<`
+		} else if (keywords.greater_than.includes(value)) {
+			return TokenType.GREATER_THAN; // `>`
 		}
+
+		return undefined;
 	}
 
 	private static _parsePunctuation(
@@ -306,7 +311,26 @@ export class Lexer {
 				value,
 				raw: value,
 			};
-		} else if ((tmptoken = this._parseOperator(value)) != undefined) {
+		}
+		// comments
+		else if (
+			keywords.slash.includes(value) &&
+			keywords.slash.includes(lexed[index + 1])
+		) {
+			index++;
+			let text: string[] = [];
+			while (keywords.newline.includes(lexed[index + 1]) != true) {
+				text.push(lexed[++index]);
+			}
+			let string = text.join(" ");
+			token = {
+				type: TokenType.COMMENT,
+				value: string,
+				raw: "//COMMENT: " + string,
+			};
+		} else if (
+			(tmptoken = this._parseOperator(value, keywords)) != undefined
+		) {
 			token = {
 				type: tmptoken,
 				group: TokenGroup.OPERATOR,
@@ -315,7 +339,7 @@ export class Lexer {
 			};
 
 			const next_value = lexed[index + 1];
-			const next_token = this._parseOperator(next_value);
+			const next_token = this._parseOperator(next_value, keywords);
 			if (next_token != undefined) {
 				const matching = (left: TokenType, right: TokenType) =>
 					token.type == left && next_token == right;

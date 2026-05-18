@@ -1,6 +1,6 @@
 import { core_plugins } from "./lang/core-plugins.js";
 import { PlagueLanguage } from "./lang/language.js";
-import { PlagueEnvironment, PlagueSystem } from "./lang/states.js";
+import { Environment, System } from "./lang/states.js";
 import { DataType } from "./lang/variables.js";
 const script = `
 fn divide (a, b){
@@ -34,10 +34,10 @@ let cat = fn (a,b){
 print(cat(5,3))
 `;
 
-const system = new PlagueSystem();
+const system = new System();
 system.plugins = [...core_plugins];
 
-const env = new PlagueEnvironment(system);
+const env = new Environment(system);
 env.root_scope.set("print", {
 	type: DataType.FUNCTION,
 	call(args) {

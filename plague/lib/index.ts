@@ -1,33 +1,26 @@
 import { core_plugins } from "./lang/core-plugins.js";
 import { PlagueLanguage } from "./lang/language.js";
-import { PlagueEnvironment, PlagueSystem } from "./lang/states.js";
+import { Parser } from "./lang/parser.js";
+import { Environment, System } from "./lang/states.js";
 import { DataType } from "./lang/variables.js";
 const script = `
-let lorem_ipsum = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
+// test meow
+for i = (1,1) {
+	print("count", i)
+}
 
-print(lorem_ipsum / "o" / "e")
 `;
 
-const script2 = `
-fn divide (a, b){
-	return a / b
+const script2 = `fn paddedDimensions (x, y, width, height, padding){
+  return [x + padding, y + padding, x + width - padding * 2, y + width - padding * 2]
 }
 
-fn add (a,b){
-	return a + b
-}
+print(paddedDimensions(0, 0, 500, 500, 20))`;
 
-let cat = fn (a,b){
-return divide(add(a * b), 2)
-}
-
-print(cat(5,3))
-`;
-
-const system = new PlagueSystem();
+const system = new System();
 system.plugins = [...core_plugins];
 
-const env = new PlagueEnvironment(system);
+const env = new Environment(system);
 env.root_scope.set("print", {
 	type: DataType.FUNCTION,
 	call(args) {
@@ -38,7 +31,7 @@ env.root_scope.set("print", {
 		return { type: DataType.NULL, value: 0 };
 	},
 });
-const statements = PlagueLanguage.parseString(system, script);
+const statements = Parser.parseString(system, script);
 // console.log(JSON.stringify(statements, null, 2), ["statements!"]);
 
 PlagueLanguage.run(env, statements);

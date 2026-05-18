@@ -1,10 +1,10 @@
-import { VecUtility } from "../language.js";
-import { SeparatorTokenType, TokenType } from "../../../lib/tokens.js";
-import {
-	LanguageHandler,
-	LanguageHook,
-	type HandlerContext,
-} from "./utility/handlers.js";
+// import { VecUtility } from "../language.js";
+// import { SeparatorTokenType, TokenType } from "../../../lib/tokens.js";
+// import {
+// 	LanguageHandler,
+// 	LanguageHook,
+// 	type HandlerContext,
+// } from "./utility/handlers.js";
 
 export enum VariableType {
 	NULL = "null",

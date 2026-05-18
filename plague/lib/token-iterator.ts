@@ -14,9 +14,14 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 	readonly stack: T[] = [];
 	public items: (T | undefined)[];
 	offset: number = 0;
+	log_count: number = 10;
 
 	constructor(items: T[], public settings: IterableOptions = {}) {
 		this.items = [...items];
+	}
+
+	remainingItems() {
+		return this.items.slice(this.offset);
 	}
 
 	*[Symbol.iterator]() {
@@ -113,8 +118,11 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 			return this.advance(1);
 		}
 
-		console.log(">>>", check);
-		throw new Error(`^^^ Expected token match and failed`);
+		console.log(
+			">>>",
+			this.remainingItems().slice(0, this.log_count)
+		);
+		throw new Error(`^^^ Expected token match for (${check}) and failed`);
 	}
 	expectResult<T extends TokenType>(check: T): AnyToken & { type: T } {
 		const status = this.match(check, 1);
@@ -122,7 +130,11 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 		if (status == true) {
 			return this.advance(1) as any;
 		}
-		throw new Error(`Expected ${check} and failed`);
+		console.log(
+			">>>",
+			this.remainingItems().slice(0, this.log_count)
+		);
+		throw new Error(`Expected token id (${check}) and failed`);
 	}
 
 	last(n: number = 0) {

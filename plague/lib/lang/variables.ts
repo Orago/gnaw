@@ -11,15 +11,25 @@ export enum DataType {
 	FUNCTION = "function",
 }
 
-export type FunctionDataValue = {
+type FunctionDataCallback = (args: DataValue[]) => DataValue | undefined | void;
+
+
+export type FunctionDataValue<
+	C extends FunctionDataCallback = FunctionDataCallback
+> = {
 	type: DataType.FUNCTION;
-	call: (args: DataValue[]) => DataValue | null;
+	call: C;
 };
 
 export type CustomDataValue<T extends any = any> = {
 	type: DataType.CUSTOM;
 	id: any;
 	value: T;
+};
+
+export type ObjectDataValue<T = any> = {
+	type: DataType.OBJECT;
+	value: Record<string, T>;
 };
 
 export type DataValue =
@@ -29,8 +39,8 @@ export type DataValue =
 	| { type: DataType.NUMBER; value: number }
 	| { type: DataType.STRING; value: string }
 	| { type: DataType.ARRAY; value: DataValue[] }
-	| { type: DataType.OBJECT; value: Record<string, DataValue> }
 	| { type: DataType.IDENTIFIER; value: string }
+	| { type: DataType.OBJECT; value: Record<string, DataValue> }
 	| CustomDataValue
 	| FunctionDataValue;
 
@@ -58,9 +68,11 @@ export class Var {
 		value,
 	});
 
-	static Object = (
-		value: Record<string, DataValue>
-	): DataValueOf<DataType.OBJECT> => ({
+	static Object = <T extends DataValue = DataValue>(
+		value: Record<string, T>
+	): Exclude<DataValueOf<DataType.OBJECT>, "value"> & {
+		value: Record<string, T>;
+	} => ({
 		type: DataType.OBJECT,
 		value,
 	});
@@ -70,9 +82,9 @@ export class Var {
 		value,
 	});
 
-	static Function = (
-		call: FunctionDataValue["call"]
-	): DataValueOf<DataType.FUNCTION> => ({
+	static Function = <C extends FunctionDataCallback = FunctionDataCallback>(
+		call: C
+	): FunctionDataValue<C> => ({
 		type: DataType.FUNCTION,
 		call,
 	});

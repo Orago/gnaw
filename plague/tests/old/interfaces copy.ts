@@ -1,6 +1,6 @@
-import type TokenIterator from "../token-iterator.js";
-import type { System } from "./states.js";
-import type { DataType } from "./variables.js";
+// import type TokenIterator from "../token-iterator.js";
+// import type { PlagueSystem } from "./states.js";
+// import type { DataType } from "./variables.js";
 
 export enum BinaryMethod {
 	ADD,
@@ -11,7 +11,6 @@ export enum BinaryMethod {
 	LESS_THAN,
 	IS,
 	NOT,
-	EXCLAMATION,
 	AS,
 	AND,
 	OR,
@@ -26,11 +25,11 @@ export enum StatementType {
 	RETURN,
 	IF,
 	FORLOOP,
-	CUSTOM,
+	CUSTOM_PLUGIN,
 }
 
 export type CustomStatement<T extends any = any> = {
-	type: StatementType.CUSTOM;
+	type: StatementType.CUSTOM_PLUGIN;
 	id: string;
 	data: T;
 };
@@ -71,7 +70,7 @@ export enum ExpressionType {
 	BOOLEAN,
 	IDENTIFIER,
 
-	CALL,
+	CALL_EXPRESSION,
 	MEMBER_ACCESS,
 	BINARY,
 	UNARY,
@@ -105,7 +104,7 @@ export type Expression =
 			right: Expression;
 	  }
 	| {
-			type: ExpressionType.CALL;
+			type: ExpressionType.CALL_EXPRESSION;
 			callee: Expression;
 			args: Expression[];
 	  }
@@ -126,7 +125,10 @@ export type ExpressionOf<T extends ExpressionType> = Extract<
 	{ type: T }
 >;
 
-export class Ast {
+export class EDescribe {
+	private static Wrap<T extends ExpressionType> (){
+
+	}
 	static Number = (value: number): ExpressionOf<ExpressionType.NUMBER> => ({
 		type: ExpressionType.NUMBER,
 		value,
@@ -142,9 +144,7 @@ export class Ast {
 		type: ExpressionType.BOOLEAN,
 		value,
 	});
-	static Identifier = (
-		name: string
-	): ExpressionOf<ExpressionType.IDENTIFIER> => ({
+	static Var = (name: string): ExpressionOf<ExpressionType.IDENTIFIER> => ({
 		type: ExpressionType.IDENTIFIER,
 		name,
 	});
@@ -174,11 +174,11 @@ export class Ast {
 		op,
 		right,
 	});
-	static InvokeCall = (
+	static Call = (
 		callee: Expression,
 		args: Expression[]
-	): ExpressionOf<ExpressionType.CALL> => ({
-		type: ExpressionType.CALL,
+	): ExpressionOf<ExpressionType.CALL_EXPRESSION> => ({
+		type: ExpressionType.CALL_EXPRESSION,
 		callee,
 		args,
 	});
@@ -200,13 +200,9 @@ export class Ast {
 	});
 }
 
-export class Describe {
-	static Expression = Ast;
-}
-
-export interface ParserContext {
+export interface PlagueParserContext {
 	iterator: TokenIterator;
-	system: System;
+	system: PlagueSystem;
 }
 
 export interface VariableOptions {

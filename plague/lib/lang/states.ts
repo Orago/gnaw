@@ -2,25 +2,22 @@ import { VariableOptions } from "./interfaces.js";
 import type { PlaguePlugin } from "./plugin-utility.js";
 import { DataValue } from "./variables.js";
 
-export class PlagueSystem {
+export class System {
 	plugins: PlaguePlugin[];
 }
 
-export class PlagueEnvironment {
-	root_scope = new PlagueScope(this);
+export class Environment {
+	root_scope = new DataScope(this);
 
-	constructor(public system: PlagueSystem) {}
+	constructor(public system: System) {}
 }
 
-export class PlagueScope {
-	static getVariable(
-		scope: PlagueScope,
-		name: string
-	): DataValue | undefined {
+export class DataScope {
+	static getVariable(scope: DataScope, name: string): DataValue | undefined {
 		if (scope.variables[name] != undefined) {
 			return scope.variables[name];
 		} else if (scope.parent != undefined) {
-			return PlagueScope.getVariable(scope.parent, name);
+			return DataScope.getVariable(scope.parent, name);
 		}
 
 		return undefined;
@@ -41,17 +38,14 @@ export class PlagueScope {
 
 	// functions: Partial<Record<string, any>> = {};
 
-	constructor(
-		public environment: PlagueEnvironment,
-		public parent?: PlagueScope
-	) {}
+	constructor(public environment: Environment, public parent?: DataScope) {}
 
 	extend() {
-		return new PlagueScope(this.environment, this);
+		return new DataScope(this.environment, this);
 	}
 
 	get(name: string) {
-		return PlagueScope.getVariable(this, name);
+		return DataScope.getVariable(this, name);
 	}
 
 	set(name: string, value: DataValue, options?: VariableOptions) {
@@ -60,6 +54,7 @@ export class PlagueScope {
 		}
 
 		const opts = this.variable_modes[name];
+
 		if (opts?.readonly == true) {
 			throw new Error(`Cannot set over read-only variable (${name})`);
 		}

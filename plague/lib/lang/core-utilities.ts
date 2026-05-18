@@ -1,128 +1,98 @@
 import { BinaryMethod } from "./interfaces.js";
-import { DataType, DataValue } from "./variables.js";
+import { DataType, DataValue, DataValueOf, Var } from "./variables.js";
 
-export class MethodMod {
-	private static $STR(
-		value: string
-	): Extract<DataValue, { type: DataType.STRING }> {
-		return { type: DataType.STRING, value };
+type OpMap<A extends DataType, B extends DataType> = (
+	left: DataValueOf<A>,
+	right: DataValueOf<B>
+) => DataValue;
+
+type MethodDict = {
+	[A in DataType]?: {
+		[B in DataType]?: {
+			[C in BinaryMethod]?: OpMap<A, B>;
+		};
+	};
+};
+
+export class MethodOps {
+	private static filter(list: DataValue[], value: DataValue) {
+		return list.filter((a) => {
+			return (
+				a.type != value.type &&
+				("value" in a && "value" in value
+					? a.value != value.value
+					: true)
+			);
+		});
 	}
-	private static $NUM(
-		value: number
-	): Extract<DataValue, { type: DataType.NUMBER }> {
-		return { type: DataType.NUMBER, value };
-	}
-
-	private static $ARR(
-		value: DataValue[]
-	): Extract<DataValue, { type: DataType.ARRAY }> {
-		return { type: DataType.ARRAY, value };
-	}
-
-	private static $BOOL(
-		value: boolean | number
-	): Extract<DataValue, { type: DataType.BOOLEAN }> {
-		return { type: DataType.BOOLEAN, value: !!value };
-	}
-
-	static operateArray(
-		left: Extract<DataValue, { type: DataType.ARRAY }>,
-		op: BinaryMethod,
-		right: DataValue
-	): DataValue | undefined {
-		switch (op) {
-			case BinaryMethod.ADD:
-				return this.$ARR([...left.value, right]);
-
-			case BinaryMethod.SUBTRACT:
-			case BinaryMethod.DIVIDE: {
-				const filtered = left.value.filter(
-					(a) =>
-						a.type != right.type &&
-						("value" in a && "value" in right
-							? a.value != right.value
-							: true)
-				);
-
-				if (op == BinaryMethod.SUBTRACT) {
-					return this.$ARR(filtered);
-				} else {
-					left.value = filtered;
+	static Dict: MethodDict = {
+		[DataType.NUMBER]: {
+			[DataType.NUMBER]: {
+				[BinaryMethod.ADD]: (left, right) =>
+					Var.Number(left.value + right.value),
+				[BinaryMethod.SUBTRACT]: (left, right) =>
+					Var.Number(left.value - right.value),
+				[BinaryMethod.MULTIPLY]: (left, right) =>
+					Var.Number(left.value * right.value),
+				[BinaryMethod.DIVIDE]: (left, right) =>
+					Var.Number(left.value / right.value),
+				[BinaryMethod.IS]: (left, right) =>
+					Var.Boolean(left.value === right.value),
+				[BinaryMethod.NOT]: (left, right) =>
+					Var.Boolean(left.value !== right.value),
+				[BinaryMethod.LESS_THAN]: (left, right) =>
+					Var.Boolean(left.value < right.value),
+				[BinaryMethod.GREATER_THAN]: (left, right) =>
+					Var.Boolean(left.value > right.value),
+			},
+		},
+		[DataType.STRING]: {
+			[DataType.STRING]: {
+				[BinaryMethod.ADD]: (left, right) =>
+					Var.String(String(left.value).concat(String(right.value))),
+				[BinaryMethod.SUBTRACT]: (left, right) =>
+					Var.String(
+						String(left.value).replace(String(right.value), "")
+					),
+				[BinaryMethod.DIVIDE]: (left, right) =>
+					Var.String(
+						String(left.value).replaceAll(String(right.value), "")
+					),
+				[BinaryMethod.IS]: (left, right) =>
+					Var.Boolean(String(left.value) === String(right.value)),
+				[BinaryMethod.NOT]: (left, right) =>
+					Var.Boolean(String(left.value) !== String(right.value)),
+			},
+		},
+		[DataType.ARRAY]: {
+			[DataType.ANY]: {
+				[BinaryMethod.ADD]: (left, right) =>
+					Var.Array([...left.value, right]),
+				[BinaryMethod.SUBTRACT]: (left, right) =>
+					Var.Array(MethodOps.filter(left.value, right)),
+				[BinaryMethod.DIVIDE]: (left, right) => {
+					left.value = MethodOps.filter(left.value, right);
 					return left;
-				}
-			}
+				},
+				[BinaryMethod.MULTIPLY]: (left, right) => {
+					left.value.push(right);
+					return left;
+				},
+			},
+		},
+	};
 
-			case BinaryMethod.MULTIPLY: {
-				left.value.push(right);
-				return left;
-			}
-		}
-	}
-
-	static operateNumber(
-		left: Extract<DataValue, { type: DataType.NUMBER }>,
+	static apply<L extends DataValue, R extends DataValue>(
+		left: L,
 		op: BinaryMethod,
-		right: DataValue
-	): DataValue | undefined {
-		if (right.type == DataType.NUMBER) {
-			switch (op) {
-				case BinaryMethod.ADD:
-					return this.$NUM(left.value + right.value);
-				case BinaryMethod.SUBTRACT:
-					return this.$NUM(left.value - right.value);
-				case BinaryMethod.MULTIPLY:
-					return this.$NUM(left.value * right.value);
-				case BinaryMethod.DIVIDE:
-					return this.$NUM(left.value / right.value);
-				case BinaryMethod.IS:
-					return this.$BOOL(left.value === right.value);
-				case BinaryMethod.NOT:
-					return this.$BOOL(left.value !== right.value);
-				case BinaryMethod.LESS_THAN:
-					return this.$BOOL(left.value < right.value);
-				case BinaryMethod.GREATER_THAN:
-					return this.$BOOL(left.value > right.value);
-			}
-		}
-	}
-
-	static operateString(
-		left: Extract<DataValue, { type: DataType.NUMBER | DataType.STRING }>,
-		op: BinaryMethod,
-		right: DataValue
-	): DataValue | undefined {
-		if (right.type == DataType.STRING || right.type == DataType.NUMBER) {
-			const left_string = String(left.value);
-			const right_string = String(right.value);
-			switch (op) {
-				case BinaryMethod.ADD:
-					return this.$STR(left_string.concat(right_string));
-				case BinaryMethod.SUBTRACT:
-					return this.$STR(left_string.replace(right_string, ""));
-				case BinaryMethod.DIVIDE:
-					return this.$STR(left_string.replaceAll(right_string, ""));
-				case BinaryMethod.IS:
-					this.$BOOL(left_string === right_string);
-				case BinaryMethod.NOT:
-					this.$BOOL(left_string !== right_string);
-			}
-		}
-	}
-
-	static operateAny(left: DataValue, op: BinaryMethod, right: DataValue) {
-		if (left.type == DataType.ARRAY) {
-			const m = MethodMod.operateArray(left, op, right);
-			if (m) return m;
-		}
-
-		if (left.type == DataType.NUMBER) {
-			const m = MethodMod.operateNumber(left, op, right);
-			if (m) return m;
-		}
-
-		if (left.type == DataType.STRING || left.type == DataType.NUMBER) {
-			const m = MethodMod.operateString(left, op, right);
-			if (m) return m;
-		}
+		right: R
+	) {
+		const left_part = this.Dict[left.type];
+		if (left_part == undefined) return;
+		const right_part = left_part[right.type];
+		if (right_part == undefined) return;
+		const op_method = right_part[op];
+		if (op_method == undefined) return;
+		return (op_method as any)(left, right);
 	}
 }

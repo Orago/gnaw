@@ -1,30 +1,45 @@
 import { Lexer } from "../lexer.js";
 import TokenIterator from "../token-iterator.js";
 import { AnyToken, TokenType } from "../tokens.js";
-import { CastPlugin } from "./core-plugins.js";
-import { MethodMod } from "./core-utilities.js";
+import { TypeCasts } from "./casts.js";
+import { MethodOps } from "./core-utilities.js";
 import {
 	BinaryMethod,
 	Expression,
 	ExpressionType,
-	PlagueParserContext,
+	ParserContext,
 	Statement,
 	StatementType,
 } from "./interfaces.js";
-import { PlagueParser } from "./parser.js";
-import {
-	type PlagueEnvironment,
-	type PlagueScope,
-	type PlagueSystem,
-} from "./states.js";
-import { DataType as DataType, FunctionDataValue } from "./variables.js";
+import { Parser } from "./parser.js";
+import { type Environment, type DataScope, type System } from "./states.js";
 import type { DataValue } from "./variables.js";
+import { DataType, FunctionDataValue, Var } from "./variables.js";
 
 export class PlagueLanguage {
+	static functionReturn(value: DataValue | null) {
+		throw { type: StatementType.RETURN, value: value ?? Var.Null() };
+	}
+
+	static expectReturn(cb: (...any: any[]) => void) {
+		try {
+			cb();
+		} catch (ret: any) {
+			if (ret.type === StatementType.RETURN) return ret.value;
+			else throw ret;
+		}
+	}
+
+	static processFunction(statements: Statement[], scope: DataScope) {
+		return PlagueLanguage.expectReturn(() => {
+			return PlagueLanguage.execManyStatements(statements, scope);
+		});
+	}
+
 	static createFunction(
 		parameters: string[],
 		body: Statement[],
-		closure: PlagueScope
+		closure: DataScope
 	): FunctionDataValue {
 		return {
 			type: DataType.FUNCTION,
@@ -35,55 +50,22 @@ export class PlagueLanguage {
 					local.set(p, args[i]);
 				});
 
-				try {
-					for (const statement of body) {
-						PlagueLanguage.execStatement(statement, local);
-					}
-				} catch (ret: any) {
-					if (ret.type === "return") {
-						return ret.value;
-					} else {
-						throw ret;
-					}
-				}
-
-				return null;
+				return PlagueLanguage.processFunction(body, local);
 			},
 		};
 	}
 	constructor() {}
 
-	static createContext(
-		system: PlagueSystem,
-		tokens: AnyToken[]
-	): PlagueParserContext {
-		const iterator = new TokenIterator(tokens);
 
-		return {
-			iterator,
-			system,
-		};
+
+	
+	static run(environment: Environment, program: Statement[]) {
+		return PlagueLanguage.expectReturn(() => {
+			return PlagueLanguage.runNest(environment, program);
+		});
 	}
 
-	static parseString(system: PlagueSystem, script: string) {
-		const lexed = Lexer.lex(script);
-		let tokens = Lexer.tokenize(lexed, {});
-		tokens = Lexer.excluding(tokens, [TokenType.NEWLINE, TokenType.INDENT]);
-		return this.parse(system, tokens);
-	}
-
-	static parse(system: PlagueSystem, tokens: AnyToken[]): Statement[] {
-		const statements: Statement[] = [];
-		const ctx: PlagueParserContext = this.createContext(system, tokens);
-
-		while (ctx.iterator.peek().type != TokenType.EOF) {
-			statements.push(PlagueParser.parseStatement(ctx));
-		}
-
-		return statements;
-	}
-
-	static run(environment: PlagueEnvironment, program: Statement[]) {
+	private static runNest(environment: Environment, program: Statement[]) {
 		const scope = environment.root_scope;
 		scope.variables;
 
@@ -105,20 +87,20 @@ export class PlagueLanguage {
 		this.execManyStatements(program, scope);
 	}
 
-	static execManyStatements(statements: Statement[], scope: PlagueScope) {
+	static execManyStatements(statements: Statement[], scope: DataScope) {
 		for (const statement of statements) {
 			PlagueLanguage.execStatement(statement, scope);
 		}
 	}
 
-	static execStatement(statement: Statement, scope: PlagueScope): void {
+	static execStatement(statement: Statement, scope: DataScope): void {
 		for (const plugin of scope.environment.system.plugins) {
 			if (plugin.statement == undefined) continue;
 
 			const test =
 				plugin.statement.test != undefined
 					? plugin.statement.test(statement)
-					: statement.type == StatementType.CUSTOM_PLUGIN &&
+					: statement.type == StatementType.CUSTOM &&
 					  statement.id == plugin.id;
 
 			if (test) {
@@ -139,9 +121,72 @@ export class PlagueLanguage {
 		}
 	}
 
+	static evalUnary(op: BinaryMethod, value: DataValue): DataValue {
+		switch (op) {
+			case BinaryMethod.SUBTRACT:
+				if (value.type === DataType.NUMBER) {
+					return Var.Number(-value.value);
+				}
+				throw new Error("Cannot negate non-number");
+
+			case BinaryMethod.EXCLAMATION:
+				if (value.type === DataType.BOOLEAN) {
+					return Var.Boolean(!value.value);
+				}
+				throw new Error("Cannot invert non-boolean");
+
+			default:
+				throw new Error(`Unknown unary operator: ${op}`);
+		}
+	}
+
+	static resolveTarget(
+		expr: Expression,
+		scope: DataScope
+	): {
+		get(): DataValue;
+		set(value: DataValue): void;
+	} {
+		if (expr.type === ExpressionType.IDENTIFIER) {
+			return {
+				get: () => scope.get(expr.name) ?? Var.Null(),
+				set: (value) => scope.set(expr.name, value),
+			};
+		}
+
+		if (expr.type === ExpressionType.MEMBER_ACCESS) {
+			const obj = this.evaluateExpression(expr.object, scope);
+			const key = this.evaluateExpression(expr.property, scope);
+
+			if (key.type != DataType.NUMBER && key.type != DataType.STRING) {
+				throw `Invalid member-key type ${key.type}`;
+			}
+
+			if (obj.type === DataType.OBJECT) {
+				return {
+					get: () => obj.value[key.value] ?? Var.Null(),
+					set: (value) => {
+						obj.value[key.value] = value;
+					},
+				};
+			}
+
+			if (obj.type === DataType.ARRAY && key.type === DataType.NUMBER) {
+				return {
+					get: () => obj.value[key.value] ?? Var.Null(),
+					set: (value) => {
+						obj.value[key.value] = value;
+					},
+				};
+			}
+		}
+
+		throw new Error("Invalid assignment target");
+	}
+
 	static evaluateExpression(
 		expression: Expression,
-		scope: PlagueScope
+		scope: DataScope
 	): DataValue {
 		for (const plugin of scope.environment.system.plugins) {
 			if (plugin.primary_literal == undefined) continue;
@@ -159,18 +204,22 @@ export class PlagueLanguage {
 
 		switch (expression.type) {
 			case ExpressionType.NUMBER:
-				return { type: DataType.NUMBER, value: expression.value };
+				return Var.Number(expression.value);
 			case ExpressionType.STRING:
-				return { type: DataType.STRING, value: expression.value };
+				return Var.String(expression.value);
 			case ExpressionType.BOOLEAN:
-				return { type: DataType.BOOLEAN, value: expression.value };
+				return Var.Boolean(expression.value);
 			case ExpressionType.IDENTIFIER:
-				return (
-					scope.get(expression.name) ?? {
-						type: DataType.NULL,
-						value: 0,
-					}
+				return scope.get(expression.name) ?? Var.Null();
+
+			case ExpressionType.UNARY: {
+				const right = PlagueLanguage.evaluateExpression(
+					expression.right,
+					scope
 				);
+				return PlagueLanguage.evalUnary(expression.op, right);
+			}
+
 			case ExpressionType.BINARY: {
 				const left = PlagueLanguage.evaluateExpression(
 					expression.left,
@@ -185,9 +234,8 @@ export class PlagueLanguage {
 					if (expression.right.type != ExpressionType.IDENTIFIER) {
 						throw new Error("Cannot cast to non-identifier");
 					}
-					console.log("CASTING", [left, expression.right]);
 					try {
-						return CastPlugin.handle(left, expression.right.name);
+						return TypeCasts.cast(left, expression.right.name);
 					} catch (e) {
 						throw new Error(
 							`Cannot cast data to type (${left.type}) -> (${expression.right.type})`
@@ -195,29 +243,50 @@ export class PlagueLanguage {
 					}
 				}
 
-				const m = MethodMod.operateAny(left, expression.op, right);
-				if (m) return m;
-				throw new Error(`Invalid operator ${expression.op}`);
+				const method_applied = MethodOps.apply(
+					left,
+					expression.op,
+					right
+				);
+				if (method_applied) {
+					return method_applied;
+				} else {
+					throw new Error(`Invalid operator ${expression.op}`);
+				}
 			}
 
-			case ExpressionType.CALL_EXPRESSION: {
+			case ExpressionType.CALL: {
 				const fn = PlagueLanguage.evaluateExpression(
 					expression.callee,
 					scope
 				) as FunctionDataValue;
-				const args = expression.args.map((arg) =>
+
+				let args = expression.args.map((arg) =>
 					PlagueLanguage.evaluateExpression(arg, scope)
 				);
+
+				if (expression.callee.type == ExpressionType.MEMBER_ACCESS) {
+					const obj = this.evaluateExpression(
+						expression.callee.object,
+						scope
+					);
+					const key = this.evaluateExpression(
+						expression.callee.property,
+						scope
+					);
+					if (
+						obj.type != DataType.OBJECT ||
+						(key.type != DataType.NUMBER &&
+							key.type != DataType.STRING)
+					) {
+						throw `Invalid member-key xx type ${key.type}`;
+					}
+					args.unshift(obj.value[key.value]);
+				}
 				const got =
 					fn?.type == DataType.FUNCTION
-						? fn.call(args) ?? {
-								type: DataType.NULL,
-								value: 0,
-						  }
-						: {
-								type: DataType.NULL,
-								value: 0,
-						  };
+						? fn.call(args) ?? Var.Null()
+						: Var.Null();
 				return got as DataValue;
 			}
 
@@ -232,50 +301,23 @@ export class PlagueLanguage {
 					object.type == DataType.ARRAY &&
 					key.type == DataType.NUMBER
 				) {
-					return (
-						object.value?.[key.value] ?? {
-							type: DataType.NULL,
-							value: 0,
-						}
-					);
+					return object.value?.[key.value] ?? Var.Null();
 				} else if (
 					object.type == DataType.OBJECT &&
 					(key.type == DataType.STRING || key.type == DataType.NUMBER)
 				) {
-					return (
-						object.value?.[key.value] ?? {
-							type: DataType.NULL,
-							value: 0,
-						}
-					);
+					return object.value?.[key.value] ?? Var.Null();
 				} else {
-					return {
-						type: DataType.NULL,
-						value: 0,
-					};
+					return Var.Null();
 				}
+				break;
 			}
 
 			case ExpressionType.ASSIGN: {
 				const value = this.evaluateExpression(expression.value, scope);
-
-				if (expression.target.type == ExpressionType.IDENTIFIER) {
-					scope.set(expression.target.name, value);
-				}
-
-				if (expression.target.type == ExpressionType.MEMBER_ACCESS) {
-					const obj = this.evaluateExpression(
-						expression.target.object,
-						scope
-					);
-					const key = this.evaluateExpression(
-						expression.target.property,
-						scope
-					);
-
-					console.log("modifying", obj, key);
-				}
-				break;
+				const ref = this.resolveTarget(expression.target, scope);
+				ref.set(value);
+				return value;
 			}
 		}
 
