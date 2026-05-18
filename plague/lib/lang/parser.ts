@@ -152,6 +152,15 @@ export class Parser {
 	): Expression {
 		let left: Expression = this.parsePrimary(ctx);
 		left = ParserMath.handleInfix(ctx, left, p);
+		const { iterator } = ctx;
+
+		// imp
+		if (iterator.disposeIf("is", TokenType.COLON)) {
+			const name = iterator.expectResult(TokenType.IDENTIFIER).value;
+			const args: Expression[] = Parser.parseParameterValues(ctx);
+			left = Ast.Imp(left, name, args);
+		}
+
 		return left;
 	}
 
@@ -201,16 +210,8 @@ export class Parser {
 
 					// invoking
 					if (next.type === TokenType.PAREN_LEFT) {
-						iterator.next();
-
-						const args: Expression[] = [];
-						while (iterator.peek().type !== TokenType.PAREN_RIGHT) {
-							args.push(this.parseExpression(ctx));
-							iterator.disposeIf("is", TokenType.COMMA);
-						}
-
-						iterator.expect(TokenType.PAREN_RIGHT);
-
+						const args: Expression[] =
+							Parser.parseParameterValues(ctx);
 						expression = Ast.InvokeCall(expression, args);
 						continue;
 					}
@@ -294,7 +295,7 @@ export class Parser {
 		});
 	}
 
-	static parseParameters(
+	static parseParameterNames(
 		ctx: ParserContext,
 		left: TokenType = TokenType.PAREN_LEFT,
 		right: TokenType = TokenType.PAREN_RIGHT
@@ -311,5 +312,24 @@ export class Parser {
 		iterator.expect(right);
 
 		return params;
+	}
+
+	static parseParameterValues(
+		ctx: ParserContext,
+		left: TokenType = TokenType.PAREN_LEFT,
+		right: TokenType = TokenType.PAREN_RIGHT
+	): Expression[] {
+		const { iterator } = ctx;
+
+		iterator.expect(left);
+
+		const args: Expression[] = [];
+		while (iterator.peek().type !== right) {
+			args.push(this.parseExpression(ctx));
+			iterator.disposeIf("is", TokenType.COMMA);
+		}
+
+		iterator.expect(right);
+		return args;
 	}
 }

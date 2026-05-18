@@ -66,7 +66,7 @@ export class FunctionPlugin extends PlaguePlugin<{
 	id = "function";
 
 	static getParams(ctx: ParserContext) {
-		return Parser.parseParameters(
+		return Parser.parseParameterNames(
 			ctx,
 			TokenType.PAREN_LEFT,
 			TokenType.PAREN_RIGHT
@@ -375,7 +375,7 @@ export class ClassPlugin extends PlaguePlugin<{
 					const method_name = iterator.expectResult(
 						TokenType.IDENTIFIER
 					).value;
-					const params = Parser.parseParameters(ctx);
+					const params = Parser.parseParameterNames(ctx);
 					const body = Parser.parseBlock(ctx, () => {
 						return Parser.parseStatement(ctx);
 					});
@@ -571,6 +571,38 @@ export class ForLoopPlugin extends PlaguePlugin<{
 	}
 }
 
+export class StringExtension extends PlaguePlugin<{}> {
+	public id = "string-extension";
+	constructor() {
+		super();
+
+		this.imp = [
+			{
+				name: "string-uppercase",
+				case: (ctx) =>
+					ctx.name == "upper" && ctx.data.type == DataType.STRING,
+				handle: (ctx) => {
+					if (Var.is(ctx.data, DataType.STRING)) {
+						return Var.String(ctx.data.value.toUpperCase());
+					}
+					return ctx.data;
+				},
+			},
+			{
+				name: "string-lowercase",
+				case: (ctx) =>
+					ctx.name == "lower" && ctx.data.type == DataType.STRING,
+				handle: (ctx) => {
+					if (Var.is(ctx.data, DataType.STRING)) {
+						return Var.String(ctx.data.value.toLowerCase());
+					}
+					return ctx.data;
+				},
+			},
+		];
+	}
+}
+
 export class CoreMethodsPlugin {
 	static READONLY_VARIABLE: VariableOptions = {
 		readonly: true,
@@ -665,4 +697,5 @@ export const core_plugins: PlaguePlugin<any>[] = [
 	new ForLoopPlugin(),
 	new IfPlugin(),
 	new ClassPlugin(),
+	new StringExtension(),
 ];

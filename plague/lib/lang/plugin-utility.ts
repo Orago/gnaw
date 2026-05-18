@@ -13,10 +13,17 @@ import { DataValue } from "./variables.js";
 
 export type PlagueFNCallback = () => [string, DataValue, VariableOptions?];
 
+export interface PluginImpCtx<D extends DataValue = DataValue> {
+	name: string;
+	data: D;
+	arguments: DataValue[];
+}
+
 export abstract class PlaguePlugin<
 	Opts extends {
 		statement?: Statement;
 		expression?: Expression;
+		imp?: DataValue;
 	} = {}
 > {
 	static wrapFunction(
@@ -37,6 +44,14 @@ export abstract class PlaguePlugin<
 		);
 	}
 	abstract id: string;
+
+	declare imp?: Opts["imp"] extends undefined
+		? never
+		: {
+				name: string;
+				case: (ctx: PluginImpCtx) => boolean;
+				handle: (ctx: PluginImpCtx) => DataValue | undefined;
+		  }[];
 
 	// * Primary
 	declare primary_literal?: Opts["expression"] extends undefined

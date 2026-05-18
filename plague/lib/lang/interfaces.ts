@@ -77,6 +77,7 @@ export enum ExpressionType {
 	UNARY,
 	FUNCTION,
 	ASSIGN,
+	IMP,
 
 	CUSTOM,
 }
@@ -118,6 +119,12 @@ export type Expression =
 			type: ExpressionType.FUNCTION;
 			params: string[];
 			body: Statement[];
+	  }
+	| {
+			type: ExpressionType.IMP;
+			name: string;
+			callee: Expression;
+			args: Expression[];
 	  }
 	| CustomExpression;
 
@@ -197,6 +204,16 @@ export class Ast {
 		type: ExpressionType.FUNCTION,
 		params,
 		body,
+	});
+	static Imp = (
+		callee: Expression,
+		name: string,
+		args: Expression[]
+	): ExpressionOf<ExpressionType.IMP> => ({
+		type: ExpressionType.IMP,
+		name,
+		callee,
+		args,
 	});
 }
 

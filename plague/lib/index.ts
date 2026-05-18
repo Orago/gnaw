@@ -4,11 +4,8 @@ import { Parser } from "./lang/parser.js";
 import { Environment, System } from "./lang/states.js";
 import { DataType } from "./lang/variables.js";
 const script = `
-// test meow
-for i = (1,1) {
-	print("count", i)
-}
-
+"hello world":upper("meow", "woof")
+print("logging", )
 `;
 
 const script2 = `fn paddedDimensions (x, y, width, height, padding){
@@ -26,7 +23,9 @@ env.root_scope.set("print", {
 	call(ctx) {
 		console.log(
 			">>",
-			ctx.arguments.map((e) => ("value" in e ? e.value : Symbol("Custom")))
+			ctx.arguments.map((e) =>
+				"value" in e ? e.value : Symbol("Custom")
+			)
 		);
 		return { type: DataType.NULL, value: 0 };
 	},

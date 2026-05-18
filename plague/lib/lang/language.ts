@@ -12,6 +12,7 @@ import {
 	StatementType,
 } from "./interfaces.js";
 import { Parser } from "./parser.js";
+import { PlaguePlugin, PluginImpCtx } from "./plugin-utility.js";
 import { type Environment, type DataScope, type System } from "./states.js";
 import type { DataValue, FunctionContext } from "./variables.js";
 import { DataType, FunctionDataValue, Var } from "./variables.js";
@@ -222,6 +223,32 @@ export class PlagueLanguage {
 		}
 
 		switch (expression.type) {
+			case ExpressionType.IMP: {
+				let name = expression.name;
+				let value = PlagueLanguage.evaluateExpression(
+					expression.callee,
+					scope
+				);
+				let args = expression.args.map((arg) =>
+					PlagueLanguage.evaluateExpression(arg, scope)
+				);
+				const ctx: PluginImpCtx = {
+					name,
+					data: value,
+					arguments: args,
+				};
+
+				for (const plugin of scope.environment.system.plugins) {
+					if (plugin.imp == undefined) continue;
+
+					for (const imp of plugin.imp) {
+						if (imp.case(ctx) != true) continue;
+						return imp.handle(ctx) ?? Var.Null();
+					}
+				}
+
+				throw new Error(`^^^ Cannot imp for :${name}()`);
+			}
 			case ExpressionType.NUMBER:
 				return Var.Number(expression.value);
 			case ExpressionType.STRING:
