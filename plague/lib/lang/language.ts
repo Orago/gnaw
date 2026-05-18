@@ -13,10 +13,10 @@ import {
 } from "./interfaces.js";
 import { Parser } from "./parser.js";
 import { type Environment, type DataScope, type System } from "./states.js";
-import type { DataValue } from "./variables.js";
+import type { DataValue, FunctionContext } from "./variables.js";
 import { DataType, FunctionDataValue, Var } from "./variables.js";
 
-export class PlagueLanguage {
+export class FunctionUtil {
 	static functionReturn(value: DataValue | null) {
 		throw { type: StatementType.RETURN, value: value ?? Var.Null() };
 	}
@@ -43,22 +43,41 @@ export class PlagueLanguage {
 	): FunctionDataValue {
 		return {
 			type: DataType.FUNCTION,
-			call(args: DataValue[]) {
+			call(ctx) {
 				const local = closure.extend();
 
 				parameters.forEach((p, i) => {
-					local.set(p, args[i]);
+					local.set(p, ctx.arguments[i]);
 				});
 
 				return PlagueLanguage.processFunction(body, local);
 			},
 		};
 	}
+
+	static createContext(
+		scope: DataScope,
+		args: DataValue[],
+		this_value?: DataValue
+	): FunctionContext {
+		return {
+			this: this_value,
+			arguments: args,
+			get: (k) => scope.get(k),
+			set: (k, v) => scope.set(k, v),
+			delete: (k) => scope.delete(k),
+		};
+	}
+}
+
+export class PlagueLanguage {
+	static functionReturn = FunctionUtil.functionReturn;
+	static expectReturn = FunctionUtil.expectReturn;
+	static processFunction = FunctionUtil.processFunction;
+	static createFunction = FunctionUtil.createFunction;
+
 	constructor() {}
 
-
-
-	
 	static run(environment: Environment, program: Statement[]) {
 		return PlagueLanguage.expectReturn(() => {
 			return PlagueLanguage.runNest(environment, program);
@@ -264,6 +283,7 @@ export class PlagueLanguage {
 				let args = expression.args.map((arg) =>
 					PlagueLanguage.evaluateExpression(arg, scope)
 				);
+				let this_value: DataValue | undefined;
 
 				if (expression.callee.type == ExpressionType.MEMBER_ACCESS) {
 					const obj = this.evaluateExpression(
@@ -281,11 +301,18 @@ export class PlagueLanguage {
 					) {
 						throw `Invalid member-key xx type ${key.type}`;
 					}
-					args.unshift(obj.value[key.value]);
+
+					this_value = obj.value[key.value];
 				}
 				const got =
 					fn?.type == DataType.FUNCTION
-						? fn.call(args) ?? Var.Null()
+						? fn.call(
+								FunctionUtil.createContext(
+									scope,
+									args,
+									this_value
+								)
+						  ) ?? Var.Null()
 						: Var.Null();
 				return got as DataValue;
 			}

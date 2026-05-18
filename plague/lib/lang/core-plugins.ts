@@ -10,7 +10,7 @@ import {
 	VariableOptions,
 } from "./interfaces.js";
 import { Parser } from "./parser.js";
-import { PlagueLanguage } from "./language.js";
+import { FunctionUtil, PlagueLanguage } from "./language.js";
 import { PlaguePlugin } from "./plugin-utility.js";
 import { DataType, DataValue, DataValueOf, Var } from "./variables.js";
 
@@ -398,17 +398,17 @@ export class ClassPlugin extends PlaguePlugin<{
 			handleStatement: (statement, scope_ref) => {
 				const { methods, name: class_name } = statement.data;
 
-				const class_fn = Var.Function((args) => {
+				const class_fn = Var.Function((ctx) => {
 					const obj = Var.Object<DataValueOf<DataType.FUNCTION>>({});
 
 					for (const [name, m] of Object.entries(methods)) {
-						obj.value[name] = Var.Function((call_args) => {
+						obj.value[name] = Var.Function((ctx) => {
 							const method_scope = scope_ref.extend();
 							method_scope.set("this", obj); //? this value
 
 							// bind params
 							m.params.forEach((p, i) => {
-								method_scope.set(p, call_args[i + 1]);
+								method_scope.set(p, ctx.arguments[i]);
 							});
 
 							return PlagueLanguage.processFunction(
@@ -420,7 +420,13 @@ export class ClassPlugin extends PlaguePlugin<{
 
 					// call constructor if there is one
 					if (obj.value["constructor"] != undefined) {
-						obj.value["constructor"].call([obj, ...args]);
+						obj.value["constructor"].call(
+							FunctionUtil.createContext(
+								scope_ref,
+								ctx.arguments,
+								obj
+							)
+						);
 					}
 
 					return obj;
@@ -574,7 +580,7 @@ export class CoreMethodsPlugin {
 		"print",
 		{
 			type: DataType.FUNCTION,
-			call(args) {
+			call({ arguments: args }) {
 				console.log(
 					">>",
 					args.map((e) => ("value" in e ? e.value : Symbol("Custom")))
@@ -589,7 +595,7 @@ export class CoreMethodsPlugin {
 		"len",
 		{
 			type: DataType.FUNCTION,
-			call: (args) => {
+			call: ({ arguments: args }) => {
 				const v = args[0];
 
 				switch (v.type) {
@@ -618,7 +624,7 @@ export class CoreMethodsPlugin {
 		"push",
 		{
 			type: DataType.FUNCTION,
-			call: (args) => {
+			call: ({ arguments: args }) => {
 				const v = args[0];
 
 				switch (v.type) {

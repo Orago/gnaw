@@ -1,7 +1,7 @@
-import { core_plugins } from "./lang/core-plugins.js";
-import { PlagueLanguage } from "./lang/language.js";
-import { Environment, System } from "./lang/states.js";
-import { DataType } from "./lang/variables.js";
+// import { core_plugins } from "./lang/core-plugins.js";
+// import { PlagueLanguage } from "./lang/language.js";
+// import { Environment, System } from "./lang/states.js";
+// import { DataType } from "./lang/variables.js";
 const script = `
 fn divide (a, b){
 	return a / b

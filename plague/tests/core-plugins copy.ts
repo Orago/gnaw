@@ -1,18 +1,18 @@
-import { TokenType } from "../tokens.js";
-import {
-	Ast,
-	type Expression,
-	ExpressionType,
-	type ParserContext as ParserContext,
-	ReturnStatement,
-	type Statement,
-	StatementType,
-	VariableOptions,
-} from "./interfaces.js";
-import { Parser } from "./parser.js";
-import { PlagueLanguage } from "./language.js";
-import { PlaguePlugin } from "./plugin-utility.js";
-import { DataType, DataValue, Var } from "./variables.js";
+// import { TokenType } from "../tokens.js";
+// import {
+// 	Ast,
+// 	type Expression,
+// 	ExpressionType,
+// 	type ParserContext as ParserContext,
+// 	ReturnStatement,
+// 	type Statement,
+// 	StatementType,
+// 	VariableOptions,
+// } from "./interfaces.js";
+// import { Parser } from "./parser.js";
+// import { PlagueLanguage } from "./language.js";
+// import { PlaguePlugin } from "./plugin-utility.js";
+// import { DataType, DataValue, Var } from "./variables.js";
 
 export class VariablePlugin extends PlaguePlugin<{
 	statement: {

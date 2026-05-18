@@ -23,10 +23,10 @@ system.plugins = [...core_plugins];
 const env = new Environment(system);
 env.root_scope.set("print", {
 	type: DataType.FUNCTION,
-	call(args) {
+	call(ctx) {
 		console.log(
 			">>",
-			args.map((e) => ("value" in e ? e.value : Symbol("Custom")))
+			ctx.arguments.map((e) => ("value" in e ? e.value : Symbol("Custom")))
 		);
 		return { type: DataType.NULL, value: 0 };
 	},

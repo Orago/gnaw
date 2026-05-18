@@ -11,8 +11,17 @@ export enum DataType {
 	FUNCTION = "function",
 }
 
-type FunctionDataCallback = (args: DataValue[]) => DataValue | undefined | void;
+export type FunctionContext = {
+	this?: DataValue;
+	arguments: DataValue[];
+	get: (name: string) => DataValue | undefined;
+	set: (name: string, value: DataValue) => void;
+	delete: (name: string) => void;
+};
 
+type FunctionDataCallback = (
+	options: FunctionContext
+) => DataValue | undefined | void;
 
 export type FunctionDataValue<
 	C extends FunctionDataCallback = FunctionDataCallback
