@@ -13,6 +13,8 @@ export enum DataType {
 	FUNCTION = "function",
 }
 
+
+
 export type FunctionContext = {
 	// primary states
 	args: DataValue[];
@@ -127,6 +129,16 @@ export class Var {
 		return data.type == expect;
 	}
 
+	static satisfies<E extends DataType>(
+		data: DataValue,
+		expect: E
+	): data is DataValueOf<E> {
+		if (data.type == expect) {
+			return true;
+		} else {
+			return expect == DataType.ANY && "type" in data;
+		}
+	}
 	static defaults = {
 		[DataType.NULL]: () => Var.Null(),
 		[DataType.ANY]: () => Var.Any(""),

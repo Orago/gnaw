@@ -2,18 +2,26 @@ import { TokenType } from "../tokens.js";
 import {
 	Ast,
 	type Expression,
+	ExpressionOf,
 	ExpressionType,
+	FunctionParameter,
 	IfStatement,
 	type ParserContext as ParserContext,
 	ReturnStatement,
 	type Statement,
+	StatementOf,
 	StatementType,
 	VariableOptions,
 } from "./interfaces.js";
 import { Parser } from "./parser.js";
 import { FunctionUtil, Language } from "./language.js";
 import { Plugin, PluginImplCtx } from "./plugin-utility.js";
-import { DataType, DataValue, DataValueOf, Var } from "./variables.js";
+import {
+	DataType,
+	DataValue,
+	DataValueOf,
+	Var,
+} from "./variables.js";
 import { TypeCasts } from "./casts.js";
 
 export class VariablePlugin extends Plugin {
@@ -75,16 +83,11 @@ export class FunctionPlugin extends Plugin<{}> {
 		super();
 
 		this.expressions = [
-			Plugin.expressionHandler<{
-				type: ExpressionType.FUNCTION;
-				params: string[];
-				body: Statement[];
-			}>({
+			Plugin.expressionHandler<ExpressionOf<ExpressionType.FUNCTION>>({
 				case: (t) => t.type == TokenType.IDENTIFIER && t.value == "fn",
 				create: (ctx) => {
-					const params = FunctionPlugin.getParams(ctx);
+					const params = Parser.parseParameterInfo(ctx);
 					const body = Parser.parseStatementBlock(ctx);
-
 					return {
 						type: ExpressionType.FUNCTION,
 						params,
@@ -94,23 +97,16 @@ export class FunctionPlugin extends Plugin<{}> {
 				test: (expression) =>
 					expression.type == ExpressionType.FUNCTION,
 				handle: (expression) => {
-					const fn = FunctionUtil.createFunction(
+					return FunctionUtil.createFunction(
 						expression.params,
 						expression.body
 					);
-
-					return fn;
 				},
 			}),
 		];
 
 		this.statements = [
-			Plugin.statementHandler<{
-				type: StatementType.FUNCTION;
-				name: string;
-				params: string[];
-				body: Statement[];
-			}>({
+			Plugin.statementHandler<StatementOf<StatementType.FUNCTION>>({
 				trim_case: true,
 				case: (t) => t.type == TokenType.IDENTIFIER && t.value == "fn",
 				createStatement: (ctx) => {
@@ -118,7 +114,7 @@ export class FunctionPlugin extends Plugin<{}> {
 					const name = iterator.expectResult(
 						TokenType.IDENTIFIER
 					).value;
-					const params = FunctionPlugin.getParams(ctx);
+					const params = Parser.parseParameterInfo(ctx);
 					const body = Parser.parseStatementBlock(ctx);
 
 					return {
@@ -129,7 +125,6 @@ export class FunctionPlugin extends Plugin<{}> {
 					};
 				},
 				test: (statement) => statement.type == StatementType.FUNCTION,
-
 				handleStatement: (statement, scope) => {
 					const fn = FunctionUtil.createFunction(
 						statement.params,
@@ -142,7 +137,7 @@ export class FunctionPlugin extends Plugin<{}> {
 	}
 }
 
-export class ReturnPlugin extends Plugin<{}> {
+export class ReturnPlugin extends Plugin {
 	id = "return";
 
 	constructor() {
@@ -352,21 +347,13 @@ export class TablesPlugin extends Plugin<{}> {
 		const { iterator } = ctx;
 		const name = iterator.expectResult(TokenType.IDENTIFIER);
 		iterator.expect(TokenType.PAREN_LEFT);
-		const params: string[] = [];
-
-		while (iterator.peek().type !== TokenType.PAREN_RIGHT) {
-			const param = iterator.expectResult(TokenType.IDENTIFIER);
-			params.push(param.value);
-			iterator.disposeIf("is", TokenType.COMMA);
-		}
-
-		iterator.expect(TokenType.PAREN_RIGHT);
+		const parameters = Parser.parseParameterInfo(ctx);
 
 		const body = Parser.parseBlock(ctx, () => Parser.parseStatement(ctx));
 
 		entries.push({
 			key: name.value,
-			value: Ast.Function(params, body),
+			value: Ast.Function(parameters, body),
 		});
 	}
 }
@@ -378,12 +365,13 @@ interface ClassStatement {
 		name: string;
 		methods: {
 			[name: string]: {
-				params: string[];
+				params: FunctionParameter[];
 				body: Statement[];
 			};
 		};
 	};
 }
+
 export class ClassPlugin extends Plugin {
 	readonly id = "class";
 
@@ -405,7 +393,7 @@ export class ClassPlugin extends Plugin {
 						const method_name = iterator.expectResult(
 							TokenType.IDENTIFIER
 						).value;
-						const params = Parser.parseParameterNames(ctx);
+						const params = Parser.parseParameterInfo(ctx);
 						const body = Parser.parseStatementBlock(ctx);
 						methods[method_name] = { params, body };
 					});

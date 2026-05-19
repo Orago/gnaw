@@ -18,6 +18,12 @@ export enum BinaryMethod {
 	DOT,
 }
 
+export type FunctionParameter = {
+	name: string;
+	type?: DataType;
+	expect?: boolean;
+};
+
 export enum StatementType {
 	VARIABLE,
 	EXPRESSION,
@@ -52,7 +58,7 @@ export type Statement =
 	| {
 			type: StatementType.FUNCTION;
 			name: string;
-			params: string[];
+			params: FunctionParameter[];
 			body: Statement[];
 	  }
 	| ReturnStatement
@@ -122,7 +128,7 @@ export type Expression =
 	  }
 	| {
 			type: ExpressionType.FUNCTION;
-			params: string[];
+			params: FunctionParameter[];
 			body: Statement[];
 	  }
 	| {
@@ -203,7 +209,7 @@ export class Ast {
 		property,
 	});
 	static Function = (
-		params: string[],
+		params: FunctionParameter[],
 		body: Statement[]
 	): ExpressionOf<ExpressionType.FUNCTION> => ({
 		type: ExpressionType.FUNCTION,

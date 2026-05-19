@@ -1,18 +1,19 @@
 import { Lexer } from "../lexer.js";
 import TokenIterator from "../token-iterator.js";
 import { AnyToken, TokenGroup, TokenType } from "../tokens.js";
+import { TypeCasts } from "./casts.js";
 import {
 	Ast,
 	BinaryMethod,
 	Describe,
 	Expression,
 	ExpressionType,
+	FunctionParameter,
 	ParserContext,
 	Statement,
 	StatementType,
 } from "./interfaces.js";
 import { System } from "./states.js";
-
 enum LogicPriority {
 	LOWEST = 0,
 	ASSIGN,
@@ -300,6 +301,40 @@ export class Parser {
 		return Parser.parseBlock(ctx, () => {
 			return Parser.parseStatement(ctx);
 		});
+	}
+
+	static parseParameterInfo(
+		ctx: ParserContext,
+		left: TokenType = TokenType.PAREN_LEFT,
+		right: TokenType = TokenType.PAREN_RIGHT
+	): FunctionParameter[] {
+		const { iterator } = ctx;
+		iterator.expect(left);
+		const params: FunctionParameter[] = [];
+
+		while (iterator.peek().type !== right) {
+			const parameter: FunctionParameter = {
+				name: iterator.expectResult(TokenType.IDENTIFIER).value,
+			};
+
+			if (iterator.disposeIf("is", TokenType.COLON)) {
+				if (iterator.disposeIf("is", TokenType.EXCLAMATION)) {
+					parameter.expect = true;
+				}
+				const type_name = iterator.expectResult(
+					TokenType.IDENTIFIER
+				).value;
+				const type = TypeCasts.getCastType(type_name);
+				parameter.type = type;
+			}
+
+			params.push(parameter);
+			iterator.disposeIf("is", TokenType.COMMA);
+		}
+
+		iterator.expect(right);
+
+		return params;
 	}
 
 	static parseParameterNames(

@@ -4,6 +4,7 @@ import {
 	BinaryMethod,
 	Expression,
 	ExpressionType,
+	FunctionParameter,
 	Statement,
 	StatementType,
 } from "./interfaces.js";
@@ -40,14 +41,34 @@ export class FunctionUtil {
 	/**
 	 * ? Parameter binding must be handled inside of function data value
 	 */
-	static bindParameters(parameters_names: string[], ctx: FunctionContext) {
-		parameters_names.forEach((p, i) => {
-			ctx.set(p, ctx.args[i] ?? Var.Null());
+	static bindParameters(
+		parameter_info: FunctionParameter[],
+		ctx: FunctionContext
+	) {
+		parameter_info.forEach((p, i) => {
+			let data = ctx.args[i] ?? Var.Null();
+			if (p.type != undefined) {
+				if (TypeCasts.isValidCast(p.type)) {
+					data = TypeCasts.convertSafe(data, p.type);
+				} else {
+					throw new Error(
+						`Invalid type to cast to (parameter: ${p.name}) -> (type: ${p.type})`
+					);
+				}
+
+				if (p.expect == true && Var.is(data, p.type)) {
+					throw new Error(
+						`Expected (parameter: ${p.name}) of (type: ${p.type}), but got (type: ${data.type})`
+					);
+				}
+			}
+
+			ctx.set(p.name, data);
 		});
 	}
 
 	static createFunction(
-		parameters: string[],
+		parameters: FunctionParameter[],
 		body: Statement[]
 	): FunctionDataValue {
 		return {

@@ -22,16 +22,21 @@ export class TypeCasts {
 			[DataType.BOOLEAN]: (data) => {
 				if (data.value == String(true)) {
 					return Var.Boolean(true);
-				} else if (data.value == String(false)) {
-					return Var.Boolean(false);
-				} else {
-					return Var.Boolean(data.value.trim().length > 0);
 				}
+				if (data.value == String(false)) {
+					return Var.Boolean(false);
+				}
+				return Var.Boolean(data.value.trim().length > 0);
 			},
 		},
 		[DataType.BOOLEAN]: {
 			[DataType.NUMBER]: (data) => Var.Number(+data.value),
 			[DataType.STRING]: (data) => Var.String(String(data.value)),
+		},
+		[DataType.NULL]: {
+			[DataType.NUMBER]: (data) => Var.Number(0),
+			[DataType.STRING]: (data) => Var.String(""),
+			[DataType.BOOLEAN]: (data) => Var.Boolean(false),
 		},
 	} as const satisfies CastDict;
 
@@ -49,7 +54,10 @@ export class TypeCasts {
 	static convertSafe<T extends DataType>(
 		from: DataValue,
 		to: T
-	): DataValueOf<T> | undefined {
+	): DataValueOf<T> {
+		if (Var.is(from, to)) {
+			return from;
+		}
 		return (
 			TypeCasts.convert(from, to) ??
 			(Var.defaults[to]() as DataValueOf<T>)
@@ -62,14 +70,29 @@ export class TypeCasts {
 		boolean: DataType.BOOLEAN,
 	};
 
-	static cast(data: DataValue, name: string) {
+	static isValidCast(name: string): name is keyof typeof TypeCasts.cast_map {
+		return TypeCasts.cast_map[name] != undefined;
+	}
+
+	/**
+	 * ! can throw
+	 */
+	static getCastType(name: string): DataType {
 		const dt = TypeCasts.cast_map[name];
 		if (dt != undefined) {
-			const p = TypeCasts.convert(data, dt);
-
-			if (p != undefined) return p;
+			return dt;
 		}
-
 		throw new Error("Cannot cast");
+	}
+
+	/**
+	 * ! can throw
+	 */
+	static cast(data: DataValue, name: string) {
+		const dt = TypeCasts.getCastType(name);
+		const p = TypeCasts.convert(data, dt);
+		if (p != undefined) {
+			return p;
+		}
 	}
 }

@@ -4,25 +4,11 @@ import { Parser } from "./lang/parser.js";
 import { Environment, System } from "./lang/states.js";
 import { DataType } from "./lang/variables.js";
 const script = `
-fn getAge(name){
-	if name == "john" {
-		return 32
-	}
-	if name == "michael" {
-		return 20
-	}
-
-	if name == "dave" {
-		return 21
-	}
-
-	if name == "rob" {
-		return 38
-	}
-	return 0
+fn getAge(name: boolean){
+	print("got data", name)
 }
 
-print(getAge("meow"))
+print(getAge("2"))
 `;
 
 const script2 = `

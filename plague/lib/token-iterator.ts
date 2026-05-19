@@ -129,14 +129,22 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 		console.log(">>>", this.remainingItems().slice(0, this.log_count));
 		throw new Error(`^^^ Expected token match for (${check}) and failed`);
 	}
-	expectResult<T extends TokenType>(check: T): AnyToken & { type: T } {
+	expectResult<T extends TokenType>(
+		check: T,
+		or?: () => AnyToken & { type: T }
+	): AnyToken & { type: T } {
 		const status = this.match(check, 1);
 
 		if (status == true) {
 			return this.advance(1) as any;
 		}
-		console.log(">>>", this.remainingItems().slice(0, this.log_count));
-		throw new Error(`Expected token id (${check}) and failed`);
+
+		if (or != undefined) {
+			return or();
+		} else {
+			console.log(">>>", this.remainingItems().slice(0, this.log_count));
+			throw new Error(`Expected token id (${check}) and failed`);
+		}
 	}
 
 	last(n: number = 0) {
