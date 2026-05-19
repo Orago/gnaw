@@ -1,3 +1,5 @@
+import type { DataScope } from "./states.js";
+
 export enum DataType {
 	NULL = "null",
 	ANY = "any",
@@ -12,8 +14,14 @@ export enum DataType {
 }
 
 export type FunctionContext = {
+	// primary states
+	args: DataValue[];
 	this?: DataValue;
-	arguments: DataValue[];
+
+	// reference hooks
+	scope_ref: DataScope;
+
+	// methods
 	get: (name: string) => DataValue | undefined;
 	set: (name: string, value: DataValue) => void;
 	delete: (name: string) => void;

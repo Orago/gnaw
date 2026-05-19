@@ -1,19 +1,19 @@
-import { Lexer } from "../lexer.js";
-import TokenIterator from "../token-iterator.js";
-import { AnyToken, TokenType } from "../tokens.js";
 import { TypeCasts } from "./casts.js";
 import { MethodOps } from "./core-utilities.js";
 import {
 	BinaryMethod,
 	Expression,
 	ExpressionType,
-	ParserContext,
 	Statement,
 	StatementType,
 } from "./interfaces.js";
-import { Parser } from "./parser.js";
-import { PlaguePlugin, PluginImpCtx } from "./plugin-utility.js";
-import { type Environment, type DataScope, type System } from "./states.js";
+import {
+	Plugin,
+	Plugin__Expression,
+	Plugin__Statement,
+	PluginImplCtx,
+} from "./plugin-utility.js";
+import { type DataScope, type Environment } from "./states.js";
 import type { DataValue, FunctionContext } from "./variables.js";
 import { DataType, FunctionDataValue, Var } from "./variables.js";
 
@@ -32,26 +32,29 @@ export class FunctionUtil {
 	}
 
 	static processFunction(statements: Statement[], scope: DataScope) {
-		return PlagueLanguage.expectReturn(() => {
-			return PlagueLanguage.execManyStatements(statements, scope);
+		return FunctionUtil.expectReturn(() => {
+			return Language.execManyStatements(statements, scope);
+		});
+	}
+
+	/**
+	 * ? Parameter binding must be handled inside of function data value
+	 */
+	static bindParameters(parameters_names: string[], ctx: FunctionContext) {
+		parameters_names.forEach((p, i) => {
+			ctx.set(p, ctx.args[i] ?? Var.Null());
 		});
 	}
 
 	static createFunction(
 		parameters: string[],
-		body: Statement[],
-		closure: DataScope
+		body: Statement[]
 	): FunctionDataValue {
 		return {
 			type: DataType.FUNCTION,
 			call(ctx) {
-				const local = closure.extend();
-
-				parameters.forEach((p, i) => {
-					local.set(p, ctx.arguments[i]);
-				});
-
-				return PlagueLanguage.processFunction(body, local);
+				FunctionUtil.bindParameters(parameters, ctx);
+				return FunctionUtil.processFunction(body, ctx.scope_ref);
 			},
 		};
 	}
@@ -61,70 +64,86 @@ export class FunctionUtil {
 		args: DataValue[],
 		this_value?: DataValue
 	): FunctionContext {
+		const context_scope = scope.extend();
 		return {
+			// primary states
 			this: this_value,
-			arguments: args,
-			get: (k) => scope.get(k),
-			set: (k, v) => scope.set(k, v),
-			delete: (k) => scope.delete(k),
+			args,
+			scope_ref: context_scope,
+			// methods
+			get: (k) => context_scope.get(k),
+			set: (k, v) => context_scope.set(k, v),
+			delete: (k) => context_scope.delete(k),
 		};
+	}
+
+	static callFunction(
+		fn: FunctionDataValue,
+		scope: DataScope,
+		args: DataValue[],
+		this_value?: DataValue
+	): DataValue | undefined | void {
+		const env = scope.environment;
+		const ctx = FunctionUtil.createContext(
+			scope.extend(),
+			args,
+			this_value
+		);
+		if (this_value != undefined) {
+			ctx.scope_ref.set("this", this_value);
+		}
+
+		env.callDepth(1);
+
+		try {
+			return fn.call(ctx);
+		} finally {
+			env.callDepth(-1);
+		}
 	}
 }
 
-export class PlagueLanguage {
-	static functionReturn = FunctionUtil.functionReturn;
-	static expectReturn = FunctionUtil.expectReturn;
-	static processFunction = FunctionUtil.processFunction;
-	static createFunction = FunctionUtil.createFunction;
-
+export class Language {
 	constructor() {}
 
 	static run(environment: Environment, program: Statement[]) {
-		return PlagueLanguage.expectReturn(() => {
-			return PlagueLanguage.runNest(environment, program);
+		return FunctionUtil.expectReturn(() => {
+			return Language.runNest(environment, program);
 		});
 	}
 
 	private static runNest(environment: Environment, program: Statement[]) {
 		const scope = environment.root_scope;
-		scope.variables;
 
 		for (const plugin of environment.system.plugins) {
-			if (plugin.values != undefined) {
-				const values = plugin.values();
-				if (Array.isArray(values)) {
-					for (const [key, value, options] of values) {
-						scope.set(key, value, options);
-					}
-				} else {
-					for (const [k, v] of Object.entries(values)) {
-						scope.set(k, v);
-					}
-				}
-			}
+			Plugin.bindValues(scope, plugin);
 		}
 
 		this.execManyStatements(program, scope);
 	}
 
+	/** wrapper */
 	static execManyStatements(statements: Statement[], scope: DataScope) {
 		for (const statement of statements) {
-			PlagueLanguage.execStatement(statement, scope);
+			Language.execStatement(statement, scope);
 		}
 	}
 
 	static execStatement(statement: Statement, scope: DataScope): void {
 		for (const plugin of scope.environment.system.plugins) {
-			if (plugin.statement == undefined) continue;
+			const handlers = plugin.getStatements();
+			if (handlers == undefined) continue;
 
-			const test =
-				plugin.statement.test != undefined
-					? plugin.statement.test(statement)
-					: statement.type == StatementType.CUSTOM &&
-					  statement.id == plugin.id;
+			for (const handler of handlers) {
+				const test =
+					handler.test != undefined
+						? handler.test(statement)
+						: statement.type == StatementType.CUSTOM &&
+						  statement.id == plugin.id;
 
-			if (test) {
-				plugin.statement.handleStatement(statement, scope);
+				if (test) {
+					handler.handleStatement(statement, scope);
+				}
 			}
 		}
 
@@ -141,6 +160,7 @@ export class PlagueLanguage {
 		}
 	}
 
+	/** Unary handling (special operator symbol handlign that comes before data) */
 	static evalUnary(op: BinaryMethod, value: DataValue): DataValue {
 		switch (op) {
 			case BinaryMethod.SUBTRACT:
@@ -209,39 +229,43 @@ export class PlagueLanguage {
 		scope: DataScope
 	): DataValue {
 		for (const plugin of scope.environment.system.plugins) {
-			if (plugin.primary_literal == undefined) continue;
+			const handlers = plugin.getExpressions();
+			if (handlers == undefined) continue;
 
-			const test =
-				plugin.primary_literal.test != undefined
-					? plugin.primary_literal.test(expression)
-					: expression.type == ExpressionType.CUSTOM &&
-					  expression.id == plugin.id;
+			for (const handler of handlers) {
+				const test =
+					handler.test != undefined
+						? handler.test(expression)
+						: expression.type == ExpressionType.CUSTOM &&
+						  expression.id == plugin.id;
 
-			if (test) {
-				return plugin.primary_literal.handle(expression, scope);
+				if (test) {
+					return handler.handle(expression, scope);
+				}
 			}
 		}
 
 		switch (expression.type) {
-			case ExpressionType.IMP: {
+			case ExpressionType.IMPL: {
 				let name = expression.name;
-				let value = PlagueLanguage.evaluateExpression(
+				let value = Language.evaluateExpression(
 					expression.callee,
 					scope
 				);
 				let args = expression.args.map((arg) =>
-					PlagueLanguage.evaluateExpression(arg, scope)
+					Language.evaluateExpression(arg, scope)
 				);
-				const ctx: PluginImpCtx = {
+				const ctx: PluginImplCtx = {
 					name,
 					data: value,
-					arguments: args,
+					args: args,
+					scope,
 				};
 
 				for (const plugin of scope.environment.system.plugins) {
-					if (plugin.imp == undefined) continue;
+					if (plugin.impl == undefined) continue;
 
-					for (const imp of plugin.imp) {
+					for (const imp of plugin.impl) {
 						if (imp.case(ctx) != true) continue;
 						return imp.handle(ctx) ?? Var.Null();
 					}
@@ -259,35 +283,22 @@ export class PlagueLanguage {
 				return scope.get(expression.name) ?? Var.Null();
 
 			case ExpressionType.UNARY: {
-				const right = PlagueLanguage.evaluateExpression(
+				const right = Language.evaluateExpression(
 					expression.right,
 					scope
 				);
-				return PlagueLanguage.evalUnary(expression.op, right);
+				return Language.evalUnary(expression.op, right);
 			}
 
 			case ExpressionType.BINARY: {
-				const left = PlagueLanguage.evaluateExpression(
+				const left = Language.evaluateExpression(
 					expression.left,
 					scope
 				);
-				const right = PlagueLanguage.evaluateExpression(
+				const right = Language.evaluateExpression(
 					expression.right,
 					scope
 				);
-
-				if (expression.op == BinaryMethod.AS) {
-					if (expression.right.type != ExpressionType.IDENTIFIER) {
-						throw new Error("Cannot cast to non-identifier");
-					}
-					try {
-						return TypeCasts.cast(left, expression.right.name);
-					} catch (e) {
-						throw new Error(
-							`Cannot cast data to type (${left.type}) -> (${expression.right.type})`
-						);
-					}
-				}
 
 				const method_applied = MethodOps.apply(
 					left,
@@ -302,13 +313,13 @@ export class PlagueLanguage {
 			}
 
 			case ExpressionType.CALL: {
-				const fn = PlagueLanguage.evaluateExpression(
+				const fn = Language.evaluateExpression(
 					expression.callee,
 					scope
 				) as FunctionDataValue;
 
 				let args = expression.args.map((arg) =>
-					PlagueLanguage.evaluateExpression(arg, scope)
+					Language.evaluateExpression(arg, scope)
 				);
 				let this_value: DataValue | undefined;
 
@@ -331,17 +342,20 @@ export class PlagueLanguage {
 
 					this_value = obj.value[key.value];
 				}
-				const got =
-					fn?.type == DataType.FUNCTION
-						? fn.call(
-								FunctionUtil.createContext(
-									scope,
-									args,
-									this_value
-								)
-						  ) ?? Var.Null()
-						: Var.Null();
-				return got as DataValue;
+
+				if (fn.type == DataType.FUNCTION) {
+					const data = FunctionUtil.callFunction(
+						fn,
+						scope,
+						args,
+						this_value
+					);
+
+					if (data) {
+						return data;
+					}
+				}
+				return Var.Null();
 			}
 
 			case ExpressionType.MEMBER_ACCESS: {
@@ -364,7 +378,6 @@ export class PlagueLanguage {
 				} else {
 					return Var.Null();
 				}
-				break;
 			}
 
 			case ExpressionType.ASSIGN: {

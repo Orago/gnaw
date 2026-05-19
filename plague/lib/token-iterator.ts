@@ -73,6 +73,14 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 		return iter;
 	}
 
+	injectAfter(inject_items: (T | undefined)[], after_position: number) {
+		this.items = ([] as (T | undefined)[]).concat(
+			this.items.slice(0, after_position),
+			inject_items,
+			this.items.slice(after_position, this.items.length)
+		);
+	}
+
 	match(check: IterableCheck<T>, n = 1) {
 		const item = this.peek(n - 1);
 
@@ -118,10 +126,7 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 			return this.advance(1);
 		}
 
-		console.log(
-			">>>",
-			this.remainingItems().slice(0, this.log_count)
-		);
+		console.log(">>>", this.remainingItems().slice(0, this.log_count));
 		throw new Error(`^^^ Expected token match for (${check}) and failed`);
 	}
 	expectResult<T extends TokenType>(check: T): AnyToken & { type: T } {
@@ -130,10 +135,7 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 		if (status == true) {
 			return this.advance(1) as any;
 		}
-		console.log(
-			">>>",
-			this.remainingItems().slice(0, this.log_count)
-		);
+		console.log(">>>", this.remainingItems().slice(0, this.log_count));
 		throw new Error(`Expected token id (${check}) and failed`);
 	}
 
@@ -149,7 +151,7 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 				return this.items.slice(0, this.offset);
 		}
 	}
-	until<I>(
+	until(
 		check: IterableCheck<T>,
 		callback: (iterator: TokenIterator) => void
 	): void {

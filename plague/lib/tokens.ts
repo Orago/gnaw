@@ -51,6 +51,7 @@ export enum TokenType {
 	SEMICOLON, // `;`
 	NEWLINE, // `\n`
 	INDENT, // `\t`
+	QUESTION_MARK,
 
 	EOF,
 	COMMENT,
@@ -116,6 +117,7 @@ export interface PunctuationToken
 		| TokenType.SEMICOLON
 		| TokenType.NEWLINE
 		| TokenType.INDENT
+		| TokenType.QUESTION_MARK
 	> {
 	value: string;
 }

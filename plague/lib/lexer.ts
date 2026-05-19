@@ -37,6 +37,7 @@ export interface LanguageDictionary extends Record<string, string[]> {
 	semicolon: string[];
 	newline: string[];
 	indent: string[];
+	question_mark: string[];
 
 	// extra
 	boolean_true: string[];
@@ -76,6 +77,7 @@ export const default_language_dicitionary: LanguageDictionary = {
 	semicolon: [";"],
 	newline: ["\n"],
 	indent: ["\t"],
+	question_mark: ["?"],
 
 	// extra
 	boolean_true: ["true"],
@@ -194,6 +196,8 @@ export class Lexer {
 			return TokenType.NEWLINE;
 		} else if (keywords.indent.includes(value)) {
 			return TokenType.INDENT;
+		} else if (keywords.question_mark.includes(value)) {
+			return TokenType.QUESTION_MARK;
 		}
 
 		return undefined;

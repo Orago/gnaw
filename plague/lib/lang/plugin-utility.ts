@@ -3,8 +3,10 @@ import type { AnyToken } from "../tokens.js";
 import {
 	type CustomStatement,
 	Expression,
+	ExpressionOf,
 	type ParserContext,
 	type Statement,
+	StatementOf,
 	StatementType,
 	VariableOptions,
 } from "./interfaces.js";
@@ -13,19 +15,57 @@ import { DataValue } from "./variables.js";
 
 export type PlagueFNCallback = () => [string, DataValue, VariableOptions?];
 
-export interface PluginImpCtx<D extends DataValue = DataValue> {
+export interface PluginImplCtx<D extends DataValue = DataValue> {
 	name: string;
 	data: D;
-	arguments: DataValue[];
+	args: DataValue[];
+	scope: DataScope;
 }
 
-export abstract class PlaguePlugin<
+export interface Plugin__Impl {
+	name: string;
+	case: (ctx: PluginImplCtx) => boolean;
+	handle: (ctx: PluginImplCtx) => DataValue | undefined;
+}
+
+export interface Plugin__Expression<E extends Expression> {
+	case: (t: AnyToken) => boolean;
+	create: (ctx: ParserContext) => E;
+	test?: (expression: Expression) => boolean;
+	handle: (expression: E, scope: DataScope) => DataValue;
+}
+
+export interface Plugin__Statement<S extends Statement> {
+	trim_case?: boolean;
+	case: IterableCheck<AnyToken>;
+	/** Removes case from iterator */
+	createStatement: (ctx: ParserContext) => S;
+
+	test?: (statement: Statement) => boolean;
+	handleStatement: (statement: S, scope: DataScope) => any;
+}
+
+export abstract class Plugin<
 	Opts extends {
-		statement?: Statement;
-		expression?: Expression;
+		statement?: Plugin__Statement<Statement>[];
+		expression?: Plugin__Expression<Expression>[];
 		imp?: DataValue;
 	} = {}
 > {
+	static bindValues(scope: DataScope, plugin: Plugin): void {
+		if (plugin.values == undefined) return;
+		const values = plugin.values();
+		if (Array.isArray(values)) {
+			for (const [key, value, options] of values) {
+				scope.set(key, value, options);
+			}
+		} else {
+			for (const [k, v] of Object.entries(values)) {
+				scope.set(k, v);
+			}
+		}
+	}
+
 	static wrapFunction(
 		name: string,
 		data: DataValue,
@@ -38,58 +78,47 @@ export abstract class PlaguePlugin<
 		}
 	}
 
-	static ownsStatement(plugin: PlaguePlugin, statement: Statement): boolean {
+	static ownsStatement(plugin: Plugin, statement: Statement): boolean {
 		return (
 			statement.type == StatementType.CUSTOM && statement.id == plugin.id
 		);
 	}
+
+	static implHandler<T extends Plugin__Impl>(options: T): T {
+		return options;
+	}
+
+	static expressionHandler<T extends Expression>(
+		options: Plugin__Expression<T>
+	): Plugin__Expression<T> {
+		return options as any;
+	}
+
+	static statementHandler<S extends Statement>(
+		options: Plugin__Statement<S>
+	): Plugin__Statement<S> {
+		return options as any;
+	}
+
 	abstract id: string;
 
-	declare imp?: Opts["imp"] extends undefined
-		? never
-		: {
-				name: string;
-				case: (ctx: PluginImpCtx) => boolean;
-				handle: (ctx: PluginImpCtx) => DataValue | undefined;
-		  }[];
-
 	// * Primary
-	declare primary_literal?: Opts["expression"] extends undefined
-		? never
-		: {
-				case: (t: AnyToken) => boolean;
-				create: (ctx: ParserContext) => Opts["expression"];
-				test?: (expression: Expression) => boolean;
-				handle: (
-					expression: Opts["expression"],
-					scope: DataScope
-				) => DataValue;
-		  };
 
 	declare StatementType: Opts["statement"];
 
-	declare statement: Opts extends undefined
-		? never
-		: {
-				case: IterableCheck<AnyToken>;
-				createStatement: (ctx: ParserContext) => Opts["statement"];
+	declare impl?: Plugin__Impl[];
 
-				test?: (statement: Statement) => boolean;
-				handleStatement: (
-					statement: Opts["statement"],
-					scope: DataScope
-				) => any;
-		  };
+	declare expressions?: Opts["expression"] | Plugin__Expression<Expression>;
+	getExpressions(): Plugin__Expression<Expression>[] | undefined {
+		return this.expressions as Plugin__Expression<Expression>[];
+	}
+
+	declare statements?: Opts["statement"];
+	getStatements(): Plugin__Statement<Statement>[] | undefined {
+		return this.statements as Plugin__Statement<Statement>[];
+	}
 
 	declare values?: () =>
 		| Record<string, DataValue>
 		| [string, DataValue, VariableOptions?][];
-
-	protected formatStatement<T extends any>(data: T): CustomStatement<T> {
-		return {
-			type: StatementType.CUSTOM,
-			id: this.id,
-			data,
-		};
-	}
 }

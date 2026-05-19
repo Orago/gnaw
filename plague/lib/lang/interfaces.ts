@@ -12,7 +12,6 @@ export enum BinaryMethod {
 	IS,
 	NOT,
 	EXCLAMATION,
-	AS,
 	AND,
 	OR,
 	ASSIGN,
@@ -39,6 +38,12 @@ export type ReturnStatement = {
 	type: StatementType.RETURN;
 	value?: Expression;
 };
+export type IfStatement = {
+	type: StatementType.IF;
+	condition: Expression;
+	body: Statement[];
+	else?: Statement[];
+};
 
 export type Statement =
 	| CustomStatement
@@ -51,12 +56,7 @@ export type Statement =
 			body: Statement[];
 	  }
 	| ReturnStatement
-	| {
-			type: StatementType.IF;
-			condition: Expression;
-			body: Statement[];
-			else?: Statement[];
-	  }
+	| IfStatement
 	| {
 			type: StatementType.FORLOOP;
 			name: string;
@@ -64,6 +64,11 @@ export type Statement =
 			end: Expression;
 			body: Statement[];
 	  };
+
+export type StatementOf<T extends StatementType> = Extract<
+	Statement,
+	{ type: T }
+>;
 
 export enum ExpressionType {
 	NUMBER,
@@ -77,7 +82,7 @@ export enum ExpressionType {
 	UNARY,
 	FUNCTION,
 	ASSIGN,
-	IMP,
+	IMPL,
 
 	CUSTOM,
 }
@@ -121,7 +126,7 @@ export type Expression =
 			body: Statement[];
 	  }
 	| {
-			type: ExpressionType.IMP;
+			type: ExpressionType.IMPL;
 			name: string;
 			callee: Expression;
 			args: Expression[];
@@ -205,12 +210,12 @@ export class Ast {
 		params,
 		body,
 	});
-	static Imp = (
+	static Impl = (
 		callee: Expression,
 		name: string,
 		args: Expression[]
-	): ExpressionOf<ExpressionType.IMP> => ({
-		type: ExpressionType.IMP,
+	): ExpressionOf<ExpressionType.IMPL> => ({
+		type: ExpressionType.IMPL,
 		name,
 		callee,
 		args,

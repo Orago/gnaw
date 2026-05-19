@@ -51,7 +51,6 @@ class ParserMath {
 		[TokenType.NOT]: BinaryMethod.NOT,
 		[TokenType.GREATER_THAN]: BinaryMethod.GREATER_THAN,
 		[TokenType.LESS_THAN]: BinaryMethod.LESS_THAN,
-		[TokenType.CAST]: BinaryMethod.AS,
 	};
 
 	static handleInfix(
@@ -85,7 +84,9 @@ export class Parser {
 	}
 	static parseString(system: System, script: string) {
 		const lexed = Lexer.lex(script);
-		let tokens = Lexer.tokenize(lexed, {});
+		let tokens = Lexer.tokenize(lexed, {
+			keywords: system.keywords,
+		});
 
 		tokens = Lexer.excluding(tokens, [
 			TokenType.NEWLINE,
@@ -109,11 +110,16 @@ export class Parser {
 		const { iterator } = ctx;
 
 		for (const plugin of ctx.system.plugins) {
-			if (
-				plugin.statement != undefined &&
-				iterator.match(plugin.statement.case)
-			) {
-				return plugin.statement.createStatement(ctx) as Statement;
+			const handlers = plugin.getStatements();
+			if (handlers == undefined) continue;
+
+			for (const handler of handlers) {
+				if (iterator.match(handler.case)) {
+					if (handler.trim_case == true) {
+						iterator.expect(handler.case);
+					}
+					return handler.createStatement(ctx) as Statement;
+				}
 			}
 		}
 
@@ -154,11 +160,11 @@ export class Parser {
 		left = ParserMath.handleInfix(ctx, left, p);
 		const { iterator } = ctx;
 
-		// imp
-		if (iterator.disposeIf("is", TokenType.COLON)) {
+		// impl
+		while (iterator.disposeIf("is", TokenType.COLON)) {
 			const name = iterator.expectResult(TokenType.IDENTIFIER).value;
 			const args: Expression[] = Parser.parseParameterValues(ctx);
-			left = Ast.Imp(left, name, args);
+			left = Ast.Impl(left, name, args);
 		}
 
 		return left;
@@ -169,14 +175,15 @@ export class Parser {
 		const t = iterator.next();
 
 		for (const plugin of ctx.system.plugins) {
-			if (
-				plugin.primary_literal == undefined ||
-				plugin.primary_literal.case(t) != true
-			) {
-				continue;
-			}
+			const handlers = plugin.getExpressions();
+			if (handlers == undefined) continue;
 
-			return plugin.primary_literal.create(ctx) as Expression;
+			for (const handler of handlers) {
+				if (handler.case(t) != true) {
+					continue;
+				}
+				return handler.create(ctx) as Expression;
+			}
 		}
 
 		switch (t.type) {
