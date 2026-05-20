@@ -15,10 +15,8 @@
 	"description": "",
 	"devDependencies": {
 		"@swc/cli": "^0.8.1",
+		"@swc/core": "^1.15.33",
 		"@types/node": "^25.0.10",
 		"typescript": "^5.9.3"
-	},
-	"dependencies": {
-		"@swc/core": "^1.15.10"
 	}
 }
