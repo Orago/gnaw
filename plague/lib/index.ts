@@ -9,11 +9,11 @@ import {
 
 const script = `
 fn get (name: string){
-	return 1 if ? == "michael"
-	return 3 if ? == "meow"
-	return 2 if ? == "ora"
-	return 4 if ? == "woa"
-	return 5 if ? == "hmm"
+	return 1 if name == "michael"
+	return 3 if name == "meow"
+	return 2 if name == "ora"
+	return 4 if name == "woa"
+	return 5 if name == "hmm"
 	return -1
 }
 
