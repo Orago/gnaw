@@ -302,7 +302,8 @@ export class Language {
 				return Var.Boolean(expression.value);
 			case ExpressionType.IDENTIFIER:
 				return scope.get(expression.name) ?? Var.Null();
-
+			case ExpressionType.TYPE_REF:
+				return Var.TypeRef(expression.value);
 			case ExpressionType.UNARY: {
 				const right = Language.evaluateExpression(
 					expression.right,

@@ -54,7 +54,9 @@ export abstract class Plugin<
 > {
 	static bindValues(scope: DataScope, plugin: Plugin): void {
 		if (plugin.values == undefined) return;
+
 		const values = plugin.values();
+
 		if (Array.isArray(values)) {
 			for (const [key, value, options] of values) {
 				scope.set(key, value, options);

@@ -25,6 +25,7 @@ export interface LanguageDictionary extends Record<string, string[]> {
 	greater_than: string[];
 	less_than: string[];
 	exclamation: string[];
+	hashtag: string[];
 
 	is: string[];
 	not: string[];
@@ -65,9 +66,10 @@ export const default_language_dicitionary: LanguageDictionary = {
 	greater_than: [">"],
 	less_than: ["<"],
 	exclamation: ["!"],
+	hashtag: ["#"],
 
-	is: ["==", "is"],
-	not: ["!=", "not"],
+	is: ["=="],
+	not: ["!="],
 	cast: ["as"],
 
 	// punctuation
@@ -317,20 +319,17 @@ export class Lexer {
 			};
 		}
 		// comments
-		else if (
-			keywords.slash.includes(value) &&
-			keywords.slash.includes(lexed[index + 1])
-		) {
+		else if (keywords.hashtag.includes(value)) {
 			index++;
 			let text: string[] = [];
-			while (keywords.newline.includes(lexed[index + 1]) != true) {
+			while (keywords.newline.includes(lexed[index]) != true) {
 				text.push(lexed[++index]);
 			}
 			let string = text.join(" ");
 			token = {
 				type: TokenType.COMMENT,
 				value: string,
-				raw: "//COMMENT: " + string,
+				raw: "#COMMENT: " + string,
 			};
 		} else if (
 			(tmptoken = this._parseOperator(value, keywords)) != undefined

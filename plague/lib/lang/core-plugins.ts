@@ -1,4 +1,5 @@
 import { TokenType } from "../tokens.js";
+import { TypeCasts } from "./casts.js";
 import {
 	Ast,
 	type Expression,
@@ -6,23 +7,17 @@ import {
 	ExpressionType,
 	FunctionParameter,
 	IfStatement,
-	type ParserContext as ParserContext,
+	type ParserContext,
 	ReturnStatement,
 	type Statement,
 	StatementOf,
 	StatementType,
 	VariableOptions,
 } from "./interfaces.js";
-import { Parser } from "./parser.js";
 import { FunctionUtil, Language } from "./language.js";
-import { Plugin, PluginImplCtx } from "./plugin-utility.js";
-import {
-	DataType,
-	DataValue,
-	DataValueOf,
-	Var,
-} from "./variables.js";
-import { TypeCasts } from "./casts.js";
+import { Parser } from "./parser.js";
+import { Plugin } from "./plugin-utility.js";
+import { DataType, DataValue, DataValueOf, Var } from "./variables.js";
 
 export class VariablePlugin extends Plugin {
 	id = "variable";
@@ -334,10 +329,7 @@ export class TablesPlugin extends Plugin<{}> {
 						}
 					}
 
-					return {
-						type: DataType.OBJECT,
-						value: obj,
-					};
+					return Var.Object(obj)
 				},
 			}),
 		];
@@ -684,6 +676,18 @@ class TypeCastPlugin extends Plugin {
 
 		this.impl = [
 			Plugin.implHandler({
+				name: "is",
+				case: (ctx) =>
+					ctx.name == "is" && ctx.args[0].type == DataType.TYPE_REF,
+				handle: (ctx) => {
+					const type_ref = ctx
+						.args[0] as DataValueOf<DataType.TYPE_REF>;
+
+					return Var.Boolean(Var.is(ctx.data, type_ref.value));
+				},
+			}),
+
+			Plugin.implHandler({
 				name: "cast",
 				case: (ctx) => ctx.name == "cast",
 				handle: (ctx) => {
@@ -747,36 +751,6 @@ export class CoreMethodsPlugin {
 							type: DataType.NUMBER,
 							value: Object.keys(v.value).length,
 						};
-				}
-
-				return { type: DataType.NULL, value: 0 };
-			},
-		},
-		CoreMethodsPlugin.READONLY_VARIABLE
-	);
-
-	static FN_PUSH = Plugin.wrapFunction(
-		"push",
-		{
-			type: DataType.FUNCTION,
-			call: ({ args: args }) => {
-				const v = args[0];
-
-				switch (v.type) {
-					case DataType.ARRAY: {
-						v.value.push(...args.slice(1));
-						return;
-					}
-					case DataType.STRING: {
-						v.value.concat(
-							...args.slice(1).map((arg) => {
-								return arg.type == DataType.STRING
-									? arg.type
-									: "";
-							})
-						);
-						return;
-					}
 				}
 
 				return { type: DataType.NULL, value: 0 };

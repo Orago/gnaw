@@ -103,18 +103,17 @@ export class DataScope {
 	}
 
 	set(name: string, value: DataValue, options?: VariableOptions) {
-		if (options != undefined) {
-			this.updateVariableOptions(name, options);
-		}
-
 		const opts = this.variable_modes[name];
-
 		if (opts?.readonly == true) {
 			throw new Error(`Cannot set over read-only variable (${name})`);
 		}
 
 		if (value.type != this.variables[name]?.type) {
 			delete this.variable_modes[name];
+		}
+
+		if (options != undefined) {
+			this.updateVariableOptions(name, options);
 		}
 
 		this.variables[name] = value;

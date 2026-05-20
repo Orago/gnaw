@@ -82,7 +82,7 @@ export class TypeCasts {
 		if (dt != undefined) {
 			return dt;
 		}
-		throw new Error("Cannot cast");
+		throw new Error(`Cannot get data type (name: ${name})`);
 	}
 
 	/**

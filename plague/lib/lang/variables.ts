@@ -1,4 +1,4 @@
-import type { DataScope } from "./states.js";
+import { DataScope } from "./states.js";
 
 export enum DataType {
 	NULL = "null",
@@ -11,9 +11,8 @@ export enum DataType {
 	CUSTOM = "custom",
 	BOOLEAN = "boolean",
 	FUNCTION = "function",
+	TYPE_REF = "data-type",
 }
-
-
 
 export type FunctionContext = {
 	// primary states
@@ -60,6 +59,7 @@ export type DataValue =
 	| { type: DataType.ARRAY; value: DataValue[] }
 	| { type: DataType.IDENTIFIER; value: string }
 	| { type: DataType.OBJECT; value: Record<string, DataValue> }
+	| { type: DataType.TYPE_REF; value: DataType }
 	| CustomDataValue
 	| FunctionDataValue;
 
@@ -122,6 +122,13 @@ export class Var {
 		value,
 	});
 
+	static TypeRef = <T extends DataType>(
+		value: T
+	): DataValueOf<DataType.TYPE_REF> => ({
+		type: DataType.TYPE_REF,
+		value,
+	});
+
 	static is<E extends DataType>(
 		data: DataValue,
 		expect: E
@@ -150,6 +157,7 @@ export class Var {
 		[DataType.FUNCTION]: () => Var.Function(() => Var.Null()),
 		[DataType.IDENTIFIER]: () => Var.Identifier("*"),
 		[DataType.CUSTOM]: () => Var.Custom("*", {}),
+		[DataType.TYPE_REF]: () => Var.TypeRef(DataType.ANY),
 	} satisfies {
 		[K in DataType]: () => DataValueOf<K>;
 	};

@@ -92,7 +92,7 @@ export class Parser {
 		tokens = Lexer.excluding(tokens, [
 			TokenType.NEWLINE,
 			TokenType.INDENT,
-			TokenType.COMMENT,
+			// TokenType.COMMENT,
 		]);
 		return this.parseTokens(system, tokens);
 	}
@@ -157,9 +157,11 @@ export class Parser {
 		ctx: ParserContext,
 		p: number = LogicPriority.LOWEST
 	): Expression {
+		const { iterator } = ctx;
+		iterator.disposeIf("is", TokenType.COMMENT);
+
 		let left: Expression = this.parsePrimary(ctx);
 		left = ParserMath.handleInfix(ctx, left, p);
-		const { iterator } = ctx;
 
 		// impl
 		while (iterator.disposeIf("is", TokenType.COLON)) {
@@ -212,6 +214,15 @@ export class Parser {
 
 			case TokenType.IDENTIFIER: {
 				let expression: Expression = Ast.Identifier(t.value);
+
+				if (expression.name == "Type") {
+					iterator.expect(TokenType.COLON);
+					const type_name = iterator.expectResult(
+						TokenType.IDENTIFIER
+					).value;
+					const type = TypeCasts.getCastType(type_name);
+					return Ast.TypeRef(type);
+				}
 
 				while (true) {
 					const next = iterator.peek();

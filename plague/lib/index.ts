@@ -1,14 +1,12 @@
+import { EmitterPlugin } from "./extras/extra-plugins.js";
 import { core_plugins } from "./lang/core-plugins.js";
 import { Language } from "./lang/language.js";
 import { Parser } from "./lang/parser.js";
 import { Environment, System } from "./lang/states.js";
 import { DataType } from "./lang/variables.js";
 const script = `
-fn getAge(name: boolean){
-	print("got data", name)
-}
-
-print(getAge("2"))
+# hello world
+print("meow!")
 `;
 
 const script2 = `
@@ -20,7 +18,7 @@ print(paddedDimensions(0, 0, 500, 500, 20))
 `;
 
 const system = new System();
-system.plugins = [...core_plugins];
+system.plugins = [...core_plugins, new EmitterPlugin()];
 
 const env = new Environment(system);
 env.root_scope.set("print", {

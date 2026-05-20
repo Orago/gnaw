@@ -91,6 +91,7 @@ export enum ExpressionType {
 	IMPL,
 
 	CUSTOM,
+	TYPE_REF,
 }
 
 export type CustomExpression<T extends any = any> = {
@@ -137,7 +138,8 @@ export type Expression =
 			callee: Expression;
 			args: Expression[];
 	  }
-	| CustomExpression;
+	| CustomExpression
+	| { type: ExpressionType.TYPE_REF; value: DataType };
 
 export type ExpressionOf<T extends ExpressionType> = Extract<
 	Expression,
@@ -225,6 +227,13 @@ export class Ast {
 		name,
 		callee,
 		args,
+	});
+
+	static TypeRef = (
+		value: DataType
+	): ExpressionOf<ExpressionType.TYPE_REF> => ({
+		type: ExpressionType.TYPE_REF,
+		value,
 	});
 }
 
