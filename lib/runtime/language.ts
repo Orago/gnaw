@@ -40,8 +40,13 @@ export class FunctionUtil {
 	 */
 	static bindParameters(
 		parameter_info: FunctionParameter[],
-		ctx: FunctionContext
+		ctx: FunctionContext,
+		this_value?: DataValue
 	) {
+		if (this_value != undefined) {
+			ctx.set("this", this_value);
+		}
+
 		parameter_info.forEach((p, i) => {
 			let data = ctx.args[i] ?? Var.Null();
 			if (p.type != undefined) {
@@ -67,14 +72,13 @@ export class FunctionUtil {
 
 	static createFunction(
 		parameters: FunctionParameter[],
-		body: Statement[],
-		scope: DataScope
+		body: Statement[]
 	): FunctionDataValue {
 		return {
 			type: DataType.FUNCTION,
 			call(ctx) {
 				FunctionUtil.bindParameters(parameters, ctx);
-				return FunctionUtil.processFunction(body, scope);
+				return FunctionUtil.processFunction(body, ctx.scope);
 			},
 		};
 	}
@@ -84,15 +88,15 @@ export class FunctionUtil {
 		args: DataValue[],
 		this_value?: DataValue
 	): FunctionContext {
-		const context_scope = scope.extend();
 		return {
 			// primary states
 			this: this_value,
 			args,
+			scope,
 			// methods
-			get: (k) => context_scope.get(k),
-			set: (k, v) => context_scope.set(k, v),
-			delete: (k) => context_scope.delete(k),
+			get: (k) => scope.get(k),
+			set: (k, v) => scope.set(k, v),
+			delete: (k) => scope.delete(k),
 		};
 	}
 
@@ -108,9 +112,6 @@ export class FunctionUtil {
 			args,
 			this_value
 		);
-		if (this_value != undefined) {
-			ctx.set("this", this_value);
-		}
 
 		env.callDepth(1);
 
@@ -319,7 +320,6 @@ export class Language {
 					expression.right,
 					scope
 				);
-
 				const method_applied = MethodOps.apply(
 					left,
 					expression.op,

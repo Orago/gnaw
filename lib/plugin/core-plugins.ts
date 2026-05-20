@@ -85,8 +85,7 @@ export class FunctionPlugin extends Plugin<{}> {
 				handle: (expression, scope) => {
 					return FunctionUtil.createFunction(
 						expression.params,
-						expression.body,
-						scope
+						expression.body
 					);
 				},
 			}),
@@ -115,8 +114,7 @@ export class FunctionPlugin extends Plugin<{}> {
 				handleStatement: (statement, scope) => {
 					const fn = FunctionUtil.createFunction(
 						statement.params,
-						statement.body,
-						scope
+						statement.body
 					);
 					scope.set(statement.name, fn);
 				},
@@ -244,6 +242,7 @@ export class IfPlugin extends Plugin {
 						statement.condition,
 						scope
 					);
+
 					if (
 						condition.type == DataType.BOOLEAN &&
 						condition.value == true
@@ -408,8 +407,7 @@ export class ClassPlugin extends Plugin {
 						for (const [name, m] of Object.entries(methods)) {
 							obj.value[name] = Var.Function((ctx) => {
 								const method_scope = scope_ref.extend();
-								method_scope.set("this", obj); //? this value
-								FunctionUtil.bindParameters(m.params, ctx);
+								FunctionUtil.bindParameters(m.params, ctx, obj);
 								return FunctionUtil.processFunction(
 									m.body,
 									method_scope

@@ -1,3 +1,4 @@
+import type { DataScope } from "./data.js";
 
 export enum DataType {
 	NULL = "null",
@@ -17,6 +18,8 @@ export type FunctionContext = {
 	// primary states
 	args: DataValue[];
 	this?: DataValue;
+	// TODO: Find a way to move this somewhere else so the reference isn't directly passed
+	scope: DataScope;
 
 	// methods
 	get: (name: string) => DataValue | undefined;
@@ -25,7 +28,7 @@ export type FunctionContext = {
 };
 
 type FunctionDataCallback = (
-	ctx: FunctionContext,
+	ctx: FunctionContext
 ) => DataValue | undefined | void;
 
 export type FunctionDataValue<
