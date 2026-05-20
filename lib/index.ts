@@ -1,7 +1,7 @@
 export { Parser } from "./parser/core.js";
 export {
 	default_language_dicitionary,
-	LanguageDictionary,
+	type LanguageDictionary,
 } from "./parser/lexer.js";
 export { ParserQuick } from "./parser/quick.js";
 export { core_plugins } from "./plugin/core-plugins.js";

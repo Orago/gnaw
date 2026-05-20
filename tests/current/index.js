@@ -5,7 +5,7 @@ import {
 	Language,
 	Parser,
 	System,
-} from "./lang/index.js";
+} from "../../dist/index.js";
 
 const script = `
 fn get (name: string){

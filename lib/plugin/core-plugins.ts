@@ -154,7 +154,8 @@ export class ReturnPlugin extends Plugin {
 							)
 						) {
 							iterator.next();
-							let condition: Expression;
+							let condition: Expression =
+								ExpressionParser.parse(ctx);
 							//! disabled placeholder injection because I can't remember why it'd be useful
 							// if (
 							// 	iterator.match(
@@ -170,7 +171,7 @@ export class ReturnPlugin extends Plugin {
 							// 		LogicPriority.LOWEST
 							// 	);
 							// } else {
-							condition = ExpressionParser.parse(ctx);
+							// condition = ExpressionParser.parse(ctx);
 							// }
 
 							return {
