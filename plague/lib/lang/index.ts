@@ -6,7 +6,7 @@ export {
 export { ParserQuick } from "./parser/quick.js";
 export { core_plugins } from "./plugin/core-plugins.js";
 export { Plugin } from "./plugin/plugin-utility.js";
-export { Language } from "./runtime/language.js";
+export { Language, FunctionUtil } from "./runtime/index.js";
 export { DataScope, Environment, System } from "./shared/data.js";
 export {
 	BinaryMethod,

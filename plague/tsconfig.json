@@ -32,8 +32,6 @@
 	},
 	"include": [
 		"lib/**/*",
-		"tests/old",
-		"tests/extras"
 	],
 	"exclude": [
 		"node_modules"

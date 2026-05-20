@@ -67,13 +67,14 @@ export class FunctionUtil {
 
 	static createFunction(
 		parameters: FunctionParameter[],
-		body: Statement[]
+		body: Statement[],
+		scope: DataScope
 	): FunctionDataValue {
 		return {
 			type: DataType.FUNCTION,
 			call(ctx) {
 				FunctionUtil.bindParameters(parameters, ctx);
-				return FunctionUtil.processFunction(body, ctx.scope_ref);
+				return FunctionUtil.processFunction(body, scope);
 			},
 		};
 	}
@@ -88,7 +89,6 @@ export class FunctionUtil {
 			// primary states
 			this: this_value,
 			args,
-			scope_ref: context_scope,
 			// methods
 			get: (k) => context_scope.get(k),
 			set: (k, v) => context_scope.set(k, v),

@@ -82,10 +82,11 @@ export class FunctionPlugin extends Plugin<{}> {
 				},
 				test: (expression) =>
 					expression.type == ExpressionType.FUNCTION,
-				handle: (expression) => {
+				handle: (expression, scope) => {
 					return FunctionUtil.createFunction(
 						expression.params,
-						expression.body
+						expression.body,
+						scope
 					);
 				},
 			}),
@@ -114,7 +115,8 @@ export class FunctionPlugin extends Plugin<{}> {
 				handleStatement: (statement, scope) => {
 					const fn = FunctionUtil.createFunction(
 						statement.params,
-						statement.body
+						statement.body,
+						scope
 					);
 					scope.set(statement.name, fn);
 				},
@@ -725,8 +727,8 @@ export class CoreMethodsPlugin {
 		"len",
 		{
 			type: DataType.FUNCTION,
-			call: ({ args: args }) => {
-				const v = args[0];
+			call: (ctx) => {
+				const v = ctx.args[0];
 
 				switch (v.type) {
 					// return { type: DataType.NUMBER, value: v.value.length }
