@@ -1,6 +1,0 @@
-rpc connect "1194470460113567854";
-rpc state 'In world (boxatm5)';
-rpc details 'Building Worlds';
-rpc large ['r', "Beta Testing Client"];
-rpc small ['oip', 'World: boxatm5'];
-rpc update;

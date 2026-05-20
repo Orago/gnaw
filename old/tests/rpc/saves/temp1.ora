@@ -1,6 +1,0 @@
-rpc connect "1194477652506066988";
-rpc state "Freddy Farthole's somethin other";
-rpc details 'Bruh 1';
-rpc large ['or', "pluh"];
-rpc small ['or', 'pluh'];
-rpc update;

@@ -1,8 +1,0 @@
-rpc connect "964920505100554270";
-
-rpc state 'In Lobby';
-rpc details 'Idling';
-rpc large ['gameicon-2', 'Cubix Worlds'];
-rpc small ['gameicon-2', 'Cubix Worlds'];
-
-rpc update;

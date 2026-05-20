@@ -1,8 +1,0 @@
-rpc connect "1190153445206925362";
-
-rpc state 'In Lobby';
-rpc details 'Idling';
-rpc large ['cwlogo2', 'Coaster Worlds'];
-rpc small ['splash', 'Coaster Worlds'];
-
-rpc update;
