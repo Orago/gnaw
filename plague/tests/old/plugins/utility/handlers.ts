@@ -1,6 +1,6 @@
-import type TokenIterator from "../../../../lib/token-iterator.js";
-import type { Language } from "../../language.js";
-import type { VariableLike } from "../variables.js";
+// import type TokenIterator from "../../../../lib/token-iterator.js";
+// import type { Language } from "../../language.js";
+// import type { VariableLike } from "../variables.js";
 
 export interface HandlerContext {
 	language: Language;

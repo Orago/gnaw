@@ -1,4 +1,9 @@
-import { DataType, DataValue, DataValueOf, Var } from "./variables.js";
+import {
+	type DataValueOf,
+	type DataValue,
+	DataType,
+	Var,
+} from "./variables.js";
 
 type CastMap<From extends DataType> = {
 	[To in DataType]?: (data: DataValueOf<From>) => DataValueOf<To>;

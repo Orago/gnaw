@@ -1,69 +1,11 @@
-import { LanguageDictionary } from "../lexer.js";
-import { VariableOptions } from "./interfaces.js";
-import type { Plugin } from "./plugin-utility.js";
-import { DataValue } from "./variables.js";
+import type { LanguageDictionary } from "../parser/lexer.js";
+import type { Plugin } from "../plugin/plugin-utility.js";
+import type { VariableOptions } from "./interfaces.js";
+import type { DataValue } from "./variables.js";
 
 export class System {
-	plugins: Plugin[];
+	plugins: Plugin[] = [];
 	keywords?: LanguageDictionary;
-}
-
-interface EnvironmentOptions {
-	max_call_stack: number;
-	max_loop_stack: number;
-}
-
-interface EnvironmentStates {
-	call_depth: number;
-	// loop_count: number;
-}
-
-export class Environment {
-	root_scope = new DataScope(this);
-
-	options: EnvironmentOptions = {
-		max_call_stack: 10,
-		max_loop_stack: 10,
-	};
-
-	states: EnvironmentStates = {
-		call_depth: 0,
-		// loop_count: 0,
-	};
-
-	constructor(public system: System) {}
-
-	callDepth(): number;
-	callDepth(move: number): this;
-	callDepth(value?: number): this | number {
-		if (value == undefined || isNaN(value)) {
-			return this.states.call_depth;
-		} else {
-			this.states.call_depth += value;
-			if (this.states.call_depth > this.options.max_call_stack) {
-				throw new Error(
-					`Maximum call stack exceeded (${this.states.call_depth} > ${this.options.max_call_stack})`
-				);
-			}
-			return this;
-		}
-	}
-
-	loopDepth(): number;
-	loopDepth(move: number): this;
-	loopDepth(value?: number): this | number {
-		if (value == undefined || isNaN(value)) {
-			return this.states.call_depth;
-		} else {
-			this.states.call_depth += value;
-			if (this.states.call_depth > this.options.max_call_stack) {
-				throw new Error(
-					`Maximum call stack exceeded (${this.states.call_depth} > ${this.options.max_call_stack})`
-				);
-			}
-			return this;
-		}
-	}
 }
 
 export class DataScope {
@@ -129,5 +71,63 @@ export class DataScope {
 
 	delete(name: string) {
 		delete this.variables[name];
+	}
+}
+
+interface EnvironmentOptions {
+	max_call_stack: number;
+	max_loop_stack: number;
+}
+
+interface EnvironmentStates {
+	call_depth: number;
+	// loop_count: number;
+}
+
+export class Environment {
+	root_scope = new DataScope(this);
+
+	options: EnvironmentOptions = {
+		max_call_stack: 10,
+		max_loop_stack: 10,
+	};
+
+	states: EnvironmentStates = {
+		call_depth: 0,
+		// loop_count: 0,
+	};
+
+	constructor(public system: System) {}
+
+	callDepth(): number;
+	callDepth(move: number): this;
+	callDepth(value?: number): this | number {
+		if (value == undefined || isNaN(value)) {
+			return this.states.call_depth;
+		} else {
+			this.states.call_depth += value;
+			if (this.states.call_depth > this.options.max_call_stack) {
+				throw new Error(
+					`Maximum call stack exceeded (${this.states.call_depth} > ${this.options.max_call_stack})`
+				);
+			}
+			return this;
+		}
+	}
+
+	loopDepth(): number;
+	loopDepth(move: number): this;
+	loopDepth(value?: number): this | number {
+		if (value == undefined || isNaN(value)) {
+			return this.states.call_depth;
+		} else {
+			this.states.call_depth += value;
+			if (this.states.call_depth > this.options.max_call_stack) {
+				throw new Error(
+					`Maximum call stack exceeded (${this.states.call_depth} > ${this.options.max_call_stack})`
+				);
+			}
+			return this;
+		}
 	}
 }

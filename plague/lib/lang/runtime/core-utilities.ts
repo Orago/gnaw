@@ -1,5 +1,10 @@
-import { BinaryMethod } from "./interfaces.js";
-import { DataType, DataValue, DataValueOf, Var } from "./variables.js";
+import { BinaryMethod } from "../shared/enums.js";
+import {
+	type DataValue,
+	type DataValueOf,
+	DataType,
+	Var,
+} from "../shared/variables.js";
 
 type OpMap<A extends DataType, B extends DataType> = (
 	left: DataValueOf<A>,

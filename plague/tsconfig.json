@@ -10,7 +10,6 @@
 		"emitDecoratorMetadata": true,
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
-		"baseUrl": "./lib",
 		"types": [
 			"node"
 		],
@@ -33,7 +32,8 @@
 	},
 	"include": [
 		"lib/**/*",
-		"tests/old"
+		"tests/old",
+		"tests/extras"
 	],
 	"exclude": [
 		"node_modules"

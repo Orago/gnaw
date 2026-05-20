@@ -1,15 +1,11 @@
+import { FunctionUtil } from "../../lib/lang/runtime/language.js";
+import { Plugin } from "../../lib/lang/plugin/plugin-utility.js";
 import {
-	CustomExpression,
-	type Expression,
-	ExpressionOf,
-	ExpressionType,
-	StatementType,
-} from "../lang/interfaces.js";
-import { FunctionUtil, Language } from "../lang/language.js";
-import { Parser } from "../lang/parser.js";
-import { Plugin } from "../lang/plugin-utility.js";
-import { DataType, DataValue, DataValueOf, Var } from "../lang/variables.js";
-import { TokenType } from "../tokens.js";
+	DataType,
+	DataValue,
+	DataValueOf,
+	Var,
+} from "../../lib/lang/shared/variables.js";
 import Emitter, { Signal } from "./emitter.js";
 
 interface SignalDataValue {
@@ -123,4 +119,3 @@ export class EmitterPlugin extends Plugin {
 		];
 	}
 }
-

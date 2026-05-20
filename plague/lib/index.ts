@@ -1,16 +1,19 @@
-import { EmitterPlugin } from "./extras/extra-plugins.js";
-import { core_plugins } from "./lang/core-plugins.js";
-import { Language } from "./lang/language.js";
-import { Parser } from "./lang/parser.js";
-import { Environment, System } from "./lang/states.js";
-import { DataType } from "./lang/variables.js";
+import {
+	core_plugins,
+	DataType,
+	Environment,
+	Language,
+	Parser,
+	System,
+} from "./lang/index.js";
+
 const script = `
 fn get (name: string){
-	return 1 if name == "michael"
-	return 2 if name == "ora"
-	return 3 if name == "meow"
-	return 4 if name == "woa"
-	return 5 if name == "hmm"
+	return 1 if ? == "michael"
+	return 3 if ? == "meow"
+	return 2 if ? == "ora"
+	return 4 if ? == "woa"
+	return 5 if ? == "hmm"
 	return -1
 }
 
@@ -26,7 +29,7 @@ print(paddedDimensions(0, 0, 500, 500, 20))
 `;
 
 const system = new System();
-system.plugins = [...core_plugins, new EmitterPlugin()];
+system.plugins = [...core_plugins];
 
 const env = new Environment(system);
 env.root_scope.set("print", {

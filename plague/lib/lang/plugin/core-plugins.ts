@@ -1,20 +1,28 @@
-import { TokenType } from "../tokens.js";
-import { TypeCasts } from "./casts.js";
+import { TypeCasts } from "../shared/casts.js";
+import { ExpressionType, StatementType } from "../shared/enums.js";
+import { FunctionUtil, Language } from "../runtime/language.js";
 import {
 	Ast,
-	type Expression,
+	ExpressionParser,
+	type ParserContext,
+	ParserQuick,
+	TokenType,
+} from "../parser/index.js";
+import type {
+	Expression,
 	ExpressionOf,
-	ExpressionType,
 	FunctionParameter,
-	type Statement,
+	Statement,
 	StatementOf,
-	StatementType,
-	VariableOptions
-} from "./interfaces.js";
-import { FunctionUtil, Language } from "./language.js";
-import { Parser, ParserContext } from "./parser.js";
+	VariableOptions,
+} from "../shared/interfaces.js";
+import {
+	DataType,
+	type DataValue,
+	type DataValueOf,
+	Var,
+} from "../shared/variables.js";
 import { Plugin } from "./plugin-utility.js";
-import { DataType, DataValue, DataValueOf, Var } from "./variables.js";
 
 export class VariablePlugin extends Plugin {
 	id = "variable";
@@ -35,7 +43,7 @@ export class VariablePlugin extends Plugin {
 						TokenType.IDENTIFIER
 					).value;
 					iterator.expect(TokenType.EQUAL);
-					const value = Parser.parseExpression(ctx);
+					const value = ExpressionParser.parse(ctx);
 					return {
 						type: StatementType.VARIABLE,
 						name,
@@ -57,20 +65,6 @@ export class VariablePlugin extends Plugin {
 export class FunctionPlugin extends Plugin<{}> {
 	id = "function";
 
-	static getParams(ctx: ParserContext) {
-		return Parser.parseParameterNames(
-			ctx,
-			TokenType.PAREN_LEFT,
-			TokenType.PAREN_RIGHT
-		);
-	}
-
-	static getBlock(ctx: ParserContext) {
-		return Parser.parseBlock(ctx, () => {
-			return Parser.parseStatement(ctx);
-		});
-	}
-
 	constructor() {
 		super();
 
@@ -78,8 +72,8 @@ export class FunctionPlugin extends Plugin<{}> {
 			Plugin.expressionHandler<ExpressionOf<ExpressionType.FUNCTION>>({
 				case: (t) => t.type == TokenType.IDENTIFIER && t.value == "fn",
 				create: (ctx) => {
-					const params = Parser.parseParameterInfo(ctx);
-					const body = Parser.parseStatementBlock(ctx);
+					const params = ParserQuick.parseParameters(ctx);
+					const body = ParserQuick.parseStatementBlock(ctx);
 					return {
 						type: ExpressionType.FUNCTION,
 						params,
@@ -106,8 +100,8 @@ export class FunctionPlugin extends Plugin<{}> {
 					const name = iterator.expectResult(
 						TokenType.IDENTIFIER
 					).value;
-					const params = Parser.parseParameterInfo(ctx);
-					const body = Parser.parseStatementBlock(ctx);
+					const params = ParserQuick.parseParameters(ctx);
+					const body = ParserQuick.parseStatementBlock(ctx);
 
 					return {
 						type: StatementType.FUNCTION,
@@ -148,9 +142,7 @@ export class ReturnPlugin extends Plugin {
 					if (iterator.peek().type == TokenType.BRACE_RIGHT) {
 						return { type: StatementType.RETURN };
 					} else {
-						const value_offset_a = iterator.offset;
-						const value = Parser.parseExpression(ctx);
-						const value_offset_b = iterator.offset;
+						const value = ExpressionParser.parse(ctx);
 
 						if (
 							iterator.match(
@@ -160,24 +152,24 @@ export class ReturnPlugin extends Plugin {
 							)
 						) {
 							iterator.next();
+							let condition: Expression;
+							//! disabled placeholder injection because I can't remember why it'd be useful
+							// if (
+							// 	iterator.match(
+							// 		(t) => t.type == TokenType.QUESTION_MARK
+							// 	)
+							// ) {
+							// 	iterator.next();
 
-							// question mark self-injection
-							// ! Probably shouldn't be injecting directly but wtv
-							if (
-								iterator.match(
-									(t) => t.type == TokenType.QUESTION_MARK
-								)
-							) {
-								iterator.next();
-								const qm_i = iterator.offset;
-								const caught = iterator.items.slice(
-									value_offset_a,
-									value_offset_b
-								);
-								iterator.injectAfter(caught, qm_i);
-							}
-
-							const condition = Parser.parseExpression(ctx);
+							// 	console.log("GOT VALUE", value)
+							// 	condition = Parser.Math.handleInfix(
+							// 		ctx,
+							// 		value,
+							// 		LogicPriority.LOWEST
+							// 	);
+							// } else {
+							condition = ExpressionParser.parse(ctx);
+							// }
 
 							return {
 								type: StatementType.IF,
@@ -219,10 +211,10 @@ export class IfPlugin extends Plugin {
 				case: (t) => t.type == TokenType.IDENTIFIER && t.value == "if",
 				createStatement: (ctx) => {
 					const { iterator } = ctx;
-					const condition = Parser.parseExpression(ctx);
+					const condition = ExpressionParser.parse(ctx);
 
 					const main_block: Statement[] =
-						Parser.parseStatementBlock(ctx);
+						ParserQuick.parseStatementBlock(ctx);
 
 					let else_block: Statement[] = [];
 
@@ -233,7 +225,7 @@ export class IfPlugin extends Plugin {
 								t.value == "else"
 						)
 					) {
-						else_block = Parser.parseStatementBlock(ctx);
+						else_block = ParserQuick.parseStatementBlock(ctx);
 					}
 
 					return {
@@ -293,10 +285,10 @@ export class TablesPlugin extends Plugin<{}> {
 								TokenType.IDENTIFIER
 							).value;
 							iterator.expect(TokenType.EQUAL);
-							const value = Parser.parseExpression(ctx);
+							const value = ExpressionParser.parse(ctx);
 							entries.push({ key, value });
 						} else {
-							const value = Parser.parseExpression(ctx);
+							const value = ExpressionParser.parse(ctx);
 							entries.push({ value });
 						}
 						iterator.disposeIf(TokenType.COMMA);
@@ -334,13 +326,13 @@ export class TablesPlugin extends Plugin<{}> {
 		];
 	}
 
+	//! currently unused since function objects are supported and preferred
 	static handleInlineMethod(ctx: ParserContext, entries: TableEntry[]) {
 		const { iterator } = ctx;
 		const name = iterator.expectResult(TokenType.IDENTIFIER);
 		iterator.expect(TokenType.PAREN_LEFT);
-		const parameters = Parser.parseParameterInfo(ctx);
-
-		const body = Parser.parseBlock(ctx, () => Parser.parseStatement(ctx));
+		const parameters = ParserQuick.parseParameters(ctx);
+		const body = ParserQuick.parseStatementBlock(ctx);
 
 		entries.push({
 			key: name.value,
@@ -380,12 +372,12 @@ export class ClassPlugin extends Plugin {
 						TokenType.IDENTIFIER
 					).value;
 					const methods: ClassStatement["data"]["methods"] = {};
-					Parser.parseBlock(ctx, () => {
+					ParserQuick.parseBlock(ctx, () => {
 						const method_name = iterator.expectResult(
 							TokenType.IDENTIFIER
 						).value;
-						const params = Parser.parseParameterInfo(ctx);
-						const body = Parser.parseStatementBlock(ctx);
+						const params = ParserQuick.parseParameters(ctx);
+						const body = ParserQuick.parseStatementBlock(ctx);
 						methods[method_name] = { params, body };
 					});
 
@@ -514,7 +506,7 @@ export class ArrayPlugin extends Plugin<{}> {
 					const { iterator } = ctx;
 
 					while (iterator.peek().type !== TokenType.BRACKET_RIGHT) {
-						const value = Parser.parseExpression(ctx);
+						const value = ExpressionParser.parse(ctx);
 						entries.push(value);
 						iterator.disposeIf(TokenType.COMMA);
 					}
@@ -568,11 +560,11 @@ export class ForLoopPlugin extends Plugin<{}> {
 			iterator.expect(TokenType.EQUAL);
 			iterator.expect(TokenType.PAREN_LEFT);
 
-			const start = Parser.parseExpression(ctx);
+			const start = ExpressionParser.parse(ctx);
 			iterator.expect(TokenType.COMMA);
-			const end = Parser.parseExpression(ctx);
+			const end = ExpressionParser.parse(ctx);
 			iterator.expect(TokenType.PAREN_RIGHT);
-			const body = Parser.parseStatementBlock(ctx);
+			const body = ParserQuick.parseStatementBlock(ctx);
 
 			return {
 				type: StatementType.CUSTOM,

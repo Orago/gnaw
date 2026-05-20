@@ -1,22 +1,19 @@
-import { TypeCasts } from "./casts.js";
-import { MethodOps } from "./core-utilities.js";
+import { Plugin, PluginImplCtx } from "../plugin/plugin-utility.js";
+import { TypeCasts } from "../shared/casts.js";
+import { DataScope, Environment } from "../shared/data.js";
 import {
 	BinaryMethod,
-	Expression,
 	ExpressionType,
+	StatementType,
+} from "../shared/enums.js";
+import {
+	Expression,
 	FunctionParameter,
 	Statement,
-	StatementType,
-} from "./interfaces.js";
-import {
-	Plugin,
-	Plugin__Expression,
-	Plugin__Statement,
-	PluginImplCtx,
-} from "./plugin-utility.js";
-import { type DataScope, type Environment } from "./states.js";
-import type { DataValue, FunctionContext } from "./variables.js";
-import { DataType, FunctionDataValue, Var } from "./variables.js";
+} from "../shared/interfaces.js";
+import type { DataValue, FunctionContext } from "../shared/variables.js";
+import { DataType, FunctionDataValue, Var } from "../shared/variables.js";
+import { MethodOps } from "./core-utilities.js";
 
 export class FunctionUtil {
 	static functionReturn(value: DataValue | null) {
@@ -48,6 +45,7 @@ export class FunctionUtil {
 		parameter_info.forEach((p, i) => {
 			let data = ctx.args[i] ?? Var.Null();
 			if (p.type != undefined) {
+				// probably should be moved into parser but we ball
 				if (TypeCasts.isValidCast(p.type)) {
 					data = TypeCasts.convertSafe(data, p.type);
 				} else {
@@ -111,7 +109,7 @@ export class FunctionUtil {
 			this_value
 		);
 		if (this_value != undefined) {
-			ctx.scope_ref.set("this", this_value);
+			ctx.set("this", this_value);
 		}
 
 		env.callDepth(1);

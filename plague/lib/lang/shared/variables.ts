@@ -1,4 +1,4 @@
-import { DataScope } from "./states.js";
+import type { DataScope } from "./data.js";
 
 export enum DataType {
 	NULL = "null",

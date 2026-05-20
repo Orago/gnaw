@@ -1,17 +1,14 @@
-import type { IterableCheck } from "../token-iterator.js";
-import type { AnyToken } from "../tokens.js";
-import {
-	type CustomStatement,
+import type { IterableCheck } from "../parser/token-iterator.js";
+import type { AnyToken } from "../parser/tokens.js";
+import { StatementType } from "../shared/enums.js";
+import type {
 	Expression,
-	ExpressionOf,
-	type Statement,
-	StatementOf,
-	StatementType,
+	Statement,
 	VariableOptions,
-} from "./interfaces.js";
-import { DataScope } from "./states.js";
-import { DataValue } from "./variables.js";
-import { ParserContext } from "./parser.js";
+} from "../shared/interfaces.js";
+import type { ParserContext } from "../parser/types.js";
+import type { DataValue } from "../shared/variables.js";
+import type { DataScope } from "../shared/data.js";
 
 export type PlagueFNCallback = () => [string, DataValue, VariableOptions?];
 

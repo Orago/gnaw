@@ -1,0 +1,55 @@
+export enum BinaryMethod {
+	ADD,
+	SUBTRACT,
+	MULTIPLY,
+	DIVIDE,
+	GREATER_THAN,
+	LESS_THAN,
+	IS,
+	NOT,
+	EXCLAMATION,
+	AND,
+	OR,
+	ASSIGN,
+	DOT,
+}
+
+export enum StatementType {
+	VARIABLE,
+	EXPRESSION,
+	FUNCTION,
+	RETURN,
+	IF,
+	FORLOOP,
+	CUSTOM,
+}
+
+export enum ExpressionType {
+	NUMBER,
+	STRING,
+	BOOLEAN,
+	IDENTIFIER,
+	CALL,
+	MEMBER_ACCESS,
+	BINARY,
+	UNARY,
+	FUNCTION,
+	ASSIGN,
+	IMPL,
+	CUSTOM,
+	TYPE_REF,
+}
+
+export enum LogicPriority {
+	LOWEST = 0,
+	ASSIGN,
+	OR,
+	AND,
+	EQUALITY,
+	COMPARE,
+	TERM,
+	FACTOR,
+	UNARY,
+	CALL,
+	MEMBER,
+}
