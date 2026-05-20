@@ -46,7 +46,6 @@ export abstract class Plugin<
 	Opts extends {
 		statement?: Plugin__Statement<Statement>[];
 		expression?: Plugin__Expression<Expression>[];
-		imp?: DataValue;
 	} = {}
 > {
 	static bindValues(scope: DataScope, plugin: Plugin): void {
@@ -77,10 +76,12 @@ export abstract class Plugin<
 		}
 	}
 
-	static ownsStatement(plugin: Plugin, statement: Statement): boolean {
-		return (
-			statement.type == StatementType.CUSTOM && statement.id == plugin.id
-		);
+	static ownsStatement(
+		statement_id: string
+	): (statement: Statement) => boolean {
+		return (statement) =>
+			statement.type == StatementType.CUSTOM &&
+			statement.id == statement_id;
 	}
 
 	static implHandler<T extends Plugin__Impl>(options: T): T {
@@ -109,12 +110,12 @@ export abstract class Plugin<
 
 	declare expressions?: Opts["expression"] | Plugin__Expression<Expression>;
 	getExpressions(): Plugin__Expression<Expression>[] | undefined {
-		return this.expressions as Plugin__Expression<Expression>[];
+		return this.expressions as Plugin__Expression<Expression>[] | undefined;
 	}
 
 	declare statements?: Opts["statement"];
 	getStatements(): Plugin__Statement<Statement>[] | undefined {
-		return this.statements as Plugin__Statement<Statement>[];
+		return this.statements as Plugin__Statement<Statement>[] | undefined;
 	}
 
 	declare values?: () =>

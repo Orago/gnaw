@@ -1,11 +1,65 @@
 import type { LanguageDictionary } from "../parser/lexer.js";
-import type { Plugin } from "../plugin/plugin-utility.js";
-import type { VariableOptions } from "./interfaces.js";
+import type {
+	Plugin,
+	Plugin__Expression,
+	Plugin__Impl,
+	Plugin__Statement,
+} from "../plugin/plugin-utility.js";
+import type { Expression, Statement, VariableOptions } from "./interfaces.js";
 import type { DataValue } from "./variables.js";
 
 export class System {
-	plugins: Plugin[] = [];
 	keywords?: LanguageDictionary;
+
+	impl_list: Set<Plugin__Impl> = new Set();
+	expression_handlers: Set<Plugin__Expression<Expression>> = new Set();
+	statement_handlers: Set<Plugin__Statement<Statement>> = new Set();
+
+	default_values: Map<string, [DataValue, VariableOptions?]> = new Map();
+
+	clearUtilities() {
+		this.impl_list.clear();
+		this.expression_handlers.clear();
+		this.statement_handlers.clear();
+	}
+
+	loadValues(scope: DataScope) {
+		for (const [key, [value, options]] of this.default_values) {
+			scope.set(key, value, options);
+		}
+	}
+
+	loadPlugins(plugins: Plugin[]): this {
+		for (const plugin of plugins) {
+			for (const impl of plugin.impl ?? []) {
+				this.impl_list.add(impl);
+			}
+
+			for (const expression_handler of plugin.getExpressions() ?? []) {
+				this.expression_handlers.add(expression_handler);
+			}
+
+			for (const statement_handler of plugin.getStatements() ?? []) {
+				this.statement_handlers.add(statement_handler);
+			}
+
+			if (plugin.values != undefined) {
+				const values = plugin.values();
+
+				if (Array.isArray(values)) {
+					for (const [key, value, options] of values) {
+						this.default_values.set(key, [value, options]);
+					}
+				} else {
+					for (const [k, v] of Object.entries(values)) {
+						this.default_values.set(k, [v]);
+					}
+				}
+			}
+		}
+
+		return this;
+	}
 }
 
 export class DataScope {
@@ -19,20 +73,8 @@ export class DataScope {
 		return undefined;
 	}
 
-	// static getFunction(scope: PlagueScope, name: string): any {
-	// 	if (scope.functions[name] != undefined) {
-	// 		return scope.functions[name];
-	// 	} else if (scope.parent != undefined) {
-	// 		return PlagueScope.getFunction(scope.parent, name);
-	// 	}
-
-	// 	return undefined;
-	// }
-
 	variables: Partial<Record<string, DataValue>> = {};
 	variable_modes: Partial<Record<string, VariableOptions>> = {};
-
-	// functions: Partial<Record<string, any>> = {};
 
 	constructor(public environment: Environment, public parent?: DataScope) {}
 
@@ -81,7 +123,6 @@ interface EnvironmentOptions {
 
 interface EnvironmentStates {
 	call_depth: number;
-	// loop_count: number;
 }
 
 export class Environment {
@@ -94,7 +135,6 @@ export class Environment {
 
 	states: EnvironmentStates = {
 		call_depth: 0,
-		// loop_count: 0,
 	};
 
 	constructor(public system: System) {}
@@ -102,22 +142,6 @@ export class Environment {
 	callDepth(): number;
 	callDepth(move: number): this;
 	callDepth(value?: number): this | number {
-		if (value == undefined || isNaN(value)) {
-			return this.states.call_depth;
-		} else {
-			this.states.call_depth += value;
-			if (this.states.call_depth > this.options.max_call_stack) {
-				throw new Error(
-					`Maximum call stack exceeded (${this.states.call_depth} > ${this.options.max_call_stack})`
-				);
-			}
-			return this;
-		}
-	}
-
-	loopDepth(): number;
-	loopDepth(move: number): this;
-	loopDepth(value?: number): this | number {
 		if (value == undefined || isNaN(value)) {
 			return this.states.call_depth;
 		} else {

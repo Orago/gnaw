@@ -15,3 +15,4 @@ export {
 	StatementType,
 } from "./shared/enums.js";
 export { DataType } from "./shared/variables.js";
+export * as Interface from "./shared/interfaces.js";

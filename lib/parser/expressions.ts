@@ -125,16 +125,11 @@ export class ExpressionParser {
 		const { iterator } = ctx;
 		const t = iterator.next();
 
-		for (const plugin of ctx.system.plugins) {
-			const handlers = plugin.getExpressions();
-			if (handlers == undefined) continue;
-
-			for (const handler of handlers) {
-				if (handler.case(t) != true) {
-					continue;
-				}
-				return handler.create(ctx) as Expression;
+		for (const handler of ctx.system.expression_handlers) {
+			if (handler.case(t) != true) {
+				continue;
 			}
+			return handler.create(ctx) as Expression;
 		}
 
 		switch (t.type) {

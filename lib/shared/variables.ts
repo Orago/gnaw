@@ -1,6 +1,7 @@
 import type { DataScope } from "./data.js";
 
 export enum DataType {
+	CUSTOM = "custom",
 	NULL = "null",
 	ANY = "any",
 	NUMBER = "number",
@@ -8,7 +9,6 @@ export enum DataType {
 	OBJECT = "object",
 	ARRAY = "array",
 	IDENTIFIER = "identifier",
-	CUSTOM = "custom",
 	BOOLEAN = "boolean",
 	FUNCTION = "function",
 	TYPE_REF = "data-type",
@@ -18,13 +18,15 @@ export type FunctionContext = {
 	// primary states
 	args: DataValue[];
 	this?: DataValue;
-	// TODO: Find a way to move this somewhere else so the reference isn't directly passed
-	scope: DataScope;
 
+	//! I literally spent an hour trying to remove nesting from this
+	//! just to realise args are passed anyways, which removes the point of ctx.get
+	//! I also forgot my reason for wanting ctx.set or ctx.delete when all data in a function is scoped
+	//! So nothing in here will be passed to outer scopes
 	// methods
-	get: (name: string) => DataValue | undefined;
-	set: (name: string, value: DataValue) => void;
-	delete: (name: string) => void;
+	// get: (name: string) => DataValue | undefined;
+	// set: (name: string, value: DataValue) => void;
+	// delete: (name: string) => void;
 };
 
 type FunctionDataCallback = (
@@ -36,11 +38,12 @@ export type FunctionDataValue<
 > = {
 	type: DataType.FUNCTION;
 	call: C;
+	scope?: DataScope;
 };
 
-export type CustomDataValue<T extends any = any> = {
+export type CustomDataValue<K extends string = string, T extends any = any> = {
 	type: DataType.CUSTOM;
-	id: any;
+	id: K;
 	value: T;
 };
 
@@ -50,6 +53,7 @@ export type ObjectDataValue<T = any> = {
 };
 
 export type DataValue =
+	| CustomDataValue
 	| { type: DataType.NULL; value: 0 }
 	| { type: DataType.ANY; value: string }
 	| { type: DataType.BOOLEAN; value: boolean }
@@ -59,7 +63,6 @@ export type DataValue =
 	| { type: DataType.IDENTIFIER; value: string }
 	| { type: DataType.OBJECT; value: Record<string, DataValue> }
 	| { type: DataType.TYPE_REF; value: DataType }
-	| CustomDataValue
 	| FunctionDataValue;
 
 export type DataValueOf<T extends DataType> = Extract<DataValue, { type: T }>;
@@ -112,10 +115,10 @@ export class Var {
 		value: name,
 	});
 
-	static Custom = <T extends any = any>(
-		id: string,
-		value: T
-	): CustomDataValue<T> => ({
+	static Custom = <K extends string, V extends any = any>(
+		id: K,
+		value: V
+	): CustomDataValue<K, V> => ({
 		type: DataType.CUSTOM,
 		id,
 		value,
@@ -145,6 +148,7 @@ export class Var {
 			return expect == DataType.ANY && "type" in data;
 		}
 	}
+	
 	static defaults = {
 		[DataType.NULL]: () => Var.Null(),
 		[DataType.ANY]: () => Var.Any(""),

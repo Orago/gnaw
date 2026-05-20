@@ -1,5 +1,6 @@
 import { type BinaryMethod, ExpressionType } from "../shared/enums.js";
 import type {
+	CustomExpression,
 	Expression,
 	ExpressionOf,
 	FunctionParameter,
@@ -95,5 +96,14 @@ export class Ast {
 	): ExpressionOf<ExpressionType.TYPE_REF> => ({
 		type: ExpressionType.TYPE_REF,
 		value,
+	});
+
+	static Custom = <K extends string, V extends any>(
+		id: K,
+		data: V
+	): CustomExpression<K, V> => ({
+		type: ExpressionType.CUSTOM,
+		id,
+		data,
 	});
 }

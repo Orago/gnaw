@@ -19,7 +19,7 @@ type MethodDict = {
 	};
 };
 
-export class MethodOps {
+export class DataOperations {
 	private static filter(list: DataValue[], value: DataValue) {
 		return list.filter((a) => {
 			return (
@@ -30,6 +30,8 @@ export class MethodOps {
 			);
 		});
 	}
+	
+	/** Handle TypeA -> TypeB -> Operation */
 	static Dict: MethodDict = {
 		[DataType.NUMBER]: {
 			[DataType.NUMBER]: {
@@ -51,6 +53,7 @@ export class MethodOps {
 					Var.Boolean(left.value > right.value),
 			},
 		},
+
 		[DataType.STRING]: {
 			[DataType.STRING]: {
 				[BinaryMethod.ADD]: (left, right) =>
@@ -74,9 +77,9 @@ export class MethodOps {
 				[BinaryMethod.ADD]: (left, right) =>
 					Var.Array([...left.value, right]),
 				[BinaryMethod.SUBTRACT]: (left, right) =>
-					Var.Array(MethodOps.filter(left.value, right)),
+					Var.Array(DataOperations.filter(left.value, right)),
 				[BinaryMethod.DIVIDE]: (left, right) => {
-					left.value = MethodOps.filter(left.value, right);
+					left.value = DataOperations.filter(left.value, right);
 					return left;
 				},
 				[BinaryMethod.MULTIPLY]: (left, right) => {

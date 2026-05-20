@@ -9,6 +9,7 @@ import {
 	TokenType,
 } from "../parser/index.js";
 import type {
+	CustomExpression,
 	Expression,
 	ExpressionOf,
 	FunctionParameter,
@@ -17,6 +18,7 @@ import type {
 	VariableOptions,
 } from "../shared/interfaces.js";
 import {
+	type CustomDataValue,
 	DataType,
 	type DataValue,
 	type DataValueOf,
@@ -74,18 +76,15 @@ export class FunctionPlugin extends Plugin<{}> {
 				create: (ctx) => {
 					const params = ParserQuick.parseParameters(ctx);
 					const body = ParserQuick.parseStatementBlock(ctx);
-					return {
-						type: ExpressionType.FUNCTION,
-						params,
-						body,
-					};
+					return Ast.Function(params, body);
 				},
 				test: (expression) =>
 					expression.type == ExpressionType.FUNCTION,
 				handle: (expression, scope) => {
 					return FunctionUtil.createFunction(
 						expression.params,
-						expression.body
+						expression.body,
+						scope
 					);
 				},
 			}),
@@ -114,7 +113,8 @@ export class FunctionPlugin extends Plugin<{}> {
 				handleStatement: (statement, scope) => {
 					const fn = FunctionUtil.createFunction(
 						statement.params,
-						statement.body
+						statement.body,
+						scope
 					);
 					scope.set(statement.name, fn);
 				},
@@ -392,10 +392,7 @@ export class ClassPlugin extends Plugin {
 						},
 					};
 				},
-				test: (statement) =>
-					statement.type == StatementType.CUSTOM &&
-					statement.id == this.id,
-
+				test: Plugin.ownsStatement(this.id),
 				handleStatement: (statement, scope_ref) => {
 					const { methods, name: class_name } = statement.data;
 
@@ -407,7 +404,12 @@ export class ClassPlugin extends Plugin {
 						for (const [name, m] of Object.entries(methods)) {
 							obj.value[name] = Var.Function((ctx) => {
 								const method_scope = scope_ref.extend();
-								FunctionUtil.bindParameters(m.params, ctx, obj);
+								FunctionUtil.bindParameters(
+									method_scope,
+									m.params,
+									ctx.args,
+									obj
+								);
 								return FunctionUtil.processFunction(
 									m.body,
 									method_scope
@@ -435,11 +437,7 @@ export class ClassPlugin extends Plugin {
 	}
 }
 
-interface ArrayExpression {
-	type: ExpressionType.CUSTOM;
-	id: "vec";
-	data: Expression[];
-}
+interface ArrayExpression extends CustomDataValue<"vec", Expression[]> {}
 
 export class ArrayPlugin extends Plugin<{}> {
 	readonly id = "vec";
@@ -496,11 +494,7 @@ export class ArrayPlugin extends Plugin<{}> {
 		];
 
 		this.expressions = [
-			Plugin.expressionHandler<{
-				type: ExpressionType.CUSTOM;
-				id: typeof key;
-				data: Expression[];
-			}>({
+			Plugin.expressionHandler<CustomExpression<"vec", Expression[]>>({
 				case: (t) => t.type == TokenType.BRACKET_LEFT,
 				create: (ctx) => {
 					const entries: Expression[] = [];
@@ -514,11 +508,7 @@ export class ArrayPlugin extends Plugin<{}> {
 
 					iterator.expect(TokenType.BRACKET_RIGHT);
 
-					return {
-						type: ExpressionType.CUSTOM,
-						id: key,
-						data: entries,
-					};
+					return Ast.Custom(key, entries);
 				},
 				handle: (expression, scope) => {
 					const obj: DataValue[] = [];
@@ -528,10 +518,7 @@ export class ArrayPlugin extends Plugin<{}> {
 						obj.push(value);
 					}
 
-					return {
-						type: DataType.ARRAY,
-						value: obj,
-					};
+					return Var.Array(obj);
 				},
 			}),
 		];

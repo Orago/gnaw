@@ -48,13 +48,14 @@ export type StatementOf<T extends StatementType> = Extract<
 	{ type: T }
 >;
 
-export type CustomExpression<T extends any = any> = {
+export type CustomExpression<K extends string = string,T extends any = any> = {
 	type: ExpressionType.CUSTOM;
-	id: string;
+	id: K;
 	data: T;
 };
 
 export type Expression =
+| CustomExpression
 	| { type: ExpressionType.NUMBER; value: number }
 	| { type: ExpressionType.STRING; value: string }
 	| { type: ExpressionType.BOOLEAN; value: boolean }
@@ -92,7 +93,7 @@ export type Expression =
 			callee: Expression;
 			args: Expression[];
 	  }
-	| CustomExpression
+
 	| { type: ExpressionType.TYPE_REF; value: DataType };
 
 export type ExpressionOf<T extends ExpressionType> = Extract<

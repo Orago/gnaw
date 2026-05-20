@@ -69,21 +69,21 @@ export class TypeCasts {
 		);
 	}
 
-	static cast_map: Partial<Record<string, DataType>> = {
+	static cast_names: Partial<Record<string, DataType>> = {
 		string: DataType.STRING,
 		number: DataType.NUMBER,
 		boolean: DataType.BOOLEAN,
 	};
 
-	static isValidCast(name: string): name is keyof typeof TypeCasts.cast_map {
-		return TypeCasts.cast_map[name] != undefined;
+	static isValidCast(name: string): name is keyof typeof TypeCasts.cast_names {
+		return TypeCasts.cast_names[name] != undefined;
 	}
 
 	/**
 	 * ! can throw
 	 */
 	static getCastType(name: string): DataType {
-		const dt = TypeCasts.cast_map[name];
+		const dt = TypeCasts.cast_names[name];
 		if (dt != undefined) {
 			return dt;
 		}

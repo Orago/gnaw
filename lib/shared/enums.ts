@@ -15,16 +15,17 @@ export enum BinaryMethod {
 }
 
 export enum StatementType {
+	CUSTOM,
 	VARIABLE,
 	EXPRESSION,
 	FUNCTION,
 	RETURN,
 	IF,
 	FORLOOP,
-	CUSTOM,
 }
 
 export enum ExpressionType {
+	CUSTOM,
 	NUMBER,
 	STRING,
 	BOOLEAN,
@@ -36,7 +37,6 @@ export enum ExpressionType {
 	FUNCTION,
 	ASSIGN,
 	IMPL,
-	CUSTOM,
 	TYPE_REF,
 }
 

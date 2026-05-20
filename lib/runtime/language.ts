@@ -13,7 +13,7 @@ import {
 } from "../shared/interfaces.js";
 import type { DataValue, FunctionContext } from "../shared/variables.js";
 import { DataType, FunctionDataValue, Var } from "../shared/variables.js";
-import { MethodOps } from "./core-utilities.js";
+import { DataOperations } from "./core-utilities.js";
 
 export class FunctionUtil {
 	static functionReturn(value: DataValue | null) {
@@ -39,18 +39,19 @@ export class FunctionUtil {
 	 * ? Parameter binding must be handled inside of function data value
 	 */
 	static bindParameters(
+		scope: DataScope,
 		parameter_info: FunctionParameter[],
-		ctx: FunctionContext,
+		args: DataValue[],
 		this_value?: DataValue
 	) {
 		if (this_value != undefined) {
-			ctx.set("this", this_value);
+			scope.set("this", this_value);
 		}
 
 		parameter_info.forEach((p, i) => {
-			let data = ctx.args[i] ?? Var.Null();
+			let data = args[i] ?? Var.Null();
 			if (p.type != undefined) {
-				// probably should be moved into parser but we ball
+				// TODO: probably should be moved into parser but we ball
 				if (TypeCasts.isValidCast(p.type)) {
 					data = TypeCasts.convertSafe(data, p.type);
 				} else {
@@ -66,37 +67,34 @@ export class FunctionUtil {
 				}
 			}
 
-			ctx.set(p.name, data);
+			scope.set(p.name, data);
 		});
 	}
 
 	static createFunction(
 		parameters: FunctionParameter[],
-		body: Statement[]
+		body: Statement[],
+		scope: DataScope
 	): FunctionDataValue {
-		return {
-			type: DataType.FUNCTION,
-			call(ctx) {
-				FunctionUtil.bindParameters(parameters, ctx);
-				return FunctionUtil.processFunction(body, ctx.scope);
-			},
-		};
+		return Var.Function((ctx) => {
+			const local_scope = scope.extend();
+			FunctionUtil.bindParameters(local_scope, parameters, ctx.args);
+			return FunctionUtil.processFunction(body, local_scope);
+		});
 	}
 
 	static createContext(
-		scope: DataScope,
 		args: DataValue[],
 		this_value?: DataValue
 	): FunctionContext {
 		return {
 			// primary states
-			this: this_value,
 			args,
-			scope,
+			this: this_value,
 			// methods
-			get: (k) => scope.get(k),
-			set: (k, v) => scope.set(k, v),
-			delete: (k) => scope.delete(k),
+			// get: (k) => scope.get(k),
+			// set: (k, v) => scope.set(k, v),
+			// delete: (k) => scope.delete(k),
 		};
 	}
 
@@ -107,11 +105,7 @@ export class FunctionUtil {
 		this_value?: DataValue
 	): DataValue | undefined | void {
 		const env = scope.environment;
-		const ctx = FunctionUtil.createContext(
-			scope.extend(),
-			args,
-			this_value
-		);
+		const ctx = FunctionUtil.createContext(args, this_value);
 
 		env.callDepth(1);
 
@@ -124,8 +118,6 @@ export class FunctionUtil {
 }
 
 export class Language {
-	constructor() {}
-
 	static run(environment: Environment, program: Statement[]) {
 		return FunctionUtil.expectReturn(() => {
 			return Language.runNest(environment, program);
@@ -135,9 +127,7 @@ export class Language {
 	private static runNest(environment: Environment, program: Statement[]) {
 		const scope = environment.root_scope;
 
-		for (const plugin of environment.system.plugins) {
-			Plugin.bindValues(scope, plugin);
-		}
+		environment.system.loadValues(scope);
 
 		this.execManyStatements(program, scope);
 	}
@@ -150,20 +140,10 @@ export class Language {
 	}
 
 	static execStatement(statement: Statement, scope: DataScope): void {
-		for (const plugin of scope.environment.system.plugins) {
-			const handlers = plugin.getStatements();
-			if (handlers == undefined) continue;
-
-			for (const handler of handlers) {
-				const test =
-					handler.test != undefined
-						? handler.test(statement)
-						: statement.type == StatementType.CUSTOM &&
-						  statement.id == plugin.id;
-
-				if (test) {
-					handler.handleStatement(statement, scope);
-				}
+		for (const handler of scope.environment.system.statement_handlers) {
+			const test = handler.test != undefined && handler.test(statement);
+			if (test) {
+				handler.handleStatement(statement, scope);
 			}
 		}
 
@@ -248,20 +228,11 @@ export class Language {
 		expression: Expression,
 		scope: DataScope
 	): DataValue {
-		for (const plugin of scope.environment.system.plugins) {
-			const handlers = plugin.getExpressions();
-			if (handlers == undefined) continue;
+		for (const handler of scope.environment.system.expression_handlers) {
+			const test = handler.test != undefined && handler.test(expression);
 
-			for (const handler of handlers) {
-				const test =
-					handler.test != undefined
-						? handler.test(expression)
-						: expression.type == ExpressionType.CUSTOM &&
-						  expression.id == plugin.id;
-
-				if (test) {
-					return handler.handle(expression, scope);
-				}
+			if (test) {
+				return handler.handle(expression, scope);
 			}
 		}
 
@@ -282,13 +253,9 @@ export class Language {
 					scope,
 				};
 
-				for (const plugin of scope.environment.system.plugins) {
-					if (plugin.impl == undefined) continue;
-
-					for (const imp of plugin.impl) {
-						if (imp.case(ctx) != true) continue;
-						return imp.handle(ctx) ?? Var.Null();
-					}
+				for (const impl of scope.environment.system.impl_list) {
+					if (impl.case(ctx) != true) continue;
+					return impl.handle(ctx) ?? Var.Null();
 				}
 
 				throw new Error(`^^^ Cannot imp for :${name}()`);
@@ -310,7 +277,6 @@ export class Language {
 				);
 				return Language.evalUnary(expression.op, right);
 			}
-
 			case ExpressionType.BINARY: {
 				const left = Language.evaluateExpression(
 					expression.left,
@@ -320,7 +286,7 @@ export class Language {
 					expression.right,
 					scope
 				);
-				const method_applied = MethodOps.apply(
+				const method_applied = DataOperations.apply(
 					left,
 					expression.op,
 					right
@@ -331,7 +297,6 @@ export class Language {
 					throw new Error(`Invalid operator ${expression.op}`);
 				}
 			}
-
 			case ExpressionType.CALL: {
 				const fn = Language.evaluateExpression(
 					expression.callee,
@@ -377,7 +342,6 @@ export class Language {
 				}
 				return Var.Null();
 			}
-
 			case ExpressionType.MEMBER_ACCESS: {
 				const object = this.evaluateExpression(
 					expression.object,
@@ -399,7 +363,6 @@ export class Language {
 					return Var.Null();
 				}
 			}
-
 			case ExpressionType.ASSIGN: {
 				const value = this.evaluateExpression(expression.value, scope);
 				const ref = this.resolveTarget(expression.target, scope);

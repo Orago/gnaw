@@ -1,0 +1,10 @@
+fn get (name: string){
+	return 1 if name == "michael"
+	return 3 if name == "meow"
+	return 2 if name == "ora"
+	return 4 if name == "woa"
+	return 5 if name == "hmm"
+	return -1
+}
+
+print (get("ora"))
