@@ -5,8 +5,16 @@ import { Parser } from "./lang/parser.js";
 import { Environment, System } from "./lang/states.js";
 import { DataType } from "./lang/variables.js";
 const script = `
-# hello world
-print("meow!")
+fn get (name: string){
+	return 1 if name == "michael"
+	return 2 if name == "ora"
+	return 3 if name == "meow"
+	return 4 if name == "woa"
+	return 5 if name == "hmm"
+	return -1
+}
+
+print (get("ora"))
 `;
 
 const script2 = `

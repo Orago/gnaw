@@ -5,15 +5,19 @@ import { TypeCasts } from "./casts.js";
 import {
 	Ast,
 	BinaryMethod,
-	Describe,
 	Expression,
 	ExpressionType,
 	FunctionParameter,
-	ParserContext,
 	Statement,
-	StatementType,
+	StatementType
 } from "./interfaces.js";
 import { System } from "./states.js";
+
+export interface ParserContext {
+	iterator: TokenIterator;
+	system: System;
+}
+
 enum LogicPriority {
 	LOWEST = 0,
 	ASSIGN,
@@ -69,7 +73,7 @@ class ParserMath {
 			if (priority <= p) break;
 			iterator.next();
 			const right = Parser.parseExpression(ctx, priority);
-			left = Describe.Expression.Binary(left, op, right);
+			left = Ast.Binary(left, op, right);
 		}
 		return left;
 	}
@@ -137,7 +141,7 @@ export class Parser {
 		const { iterator } = ctx;
 		const target = this.parseBinary(ctx, p);
 
-		if (iterator.disposeIf("is", TokenType.EQUAL)) {
+		if (iterator.disposeIf(TokenType.EQUAL)) {
 			// right association (cascade)
 			const value = this.parseExpression(ctx);
 
@@ -158,13 +162,13 @@ export class Parser {
 		p: number = LogicPriority.LOWEST
 	): Expression {
 		const { iterator } = ctx;
-		iterator.disposeIf("is", TokenType.COMMENT);
+		iterator.disposeIf(TokenType.COMMENT);
 
 		let left: Expression = this.parsePrimary(ctx);
 		left = ParserMath.handleInfix(ctx, left, p);
 
 		// impl
-		while (iterator.disposeIf("is", TokenType.COLON)) {
+		while (iterator.disposeIf(TokenType.COLON)) {
 			const name = iterator.expectResult(TokenType.IDENTIFIER).value;
 			const args: Expression[] = Parser.parseParameterValues(ctx);
 			left = Ast.Impl(left, name, args);
@@ -236,7 +240,7 @@ export class Parser {
 					}
 
 					// member handling
-					if (iterator.disposeIf("is", TokenType.DOT)) {
+					if (iterator.disposeIf(TokenType.DOT)) {
 						const next = iterator.peek();
 
 						let property: Expression;
@@ -328,8 +332,8 @@ export class Parser {
 				name: iterator.expectResult(TokenType.IDENTIFIER).value,
 			};
 
-			if (iterator.disposeIf("is", TokenType.COLON)) {
-				if (iterator.disposeIf("is", TokenType.EXCLAMATION)) {
+			if (iterator.disposeIf(TokenType.COLON)) {
+				if (iterator.disposeIf(TokenType.EXCLAMATION)) {
 					parameter.expect = true;
 				}
 				const type_name = iterator.expectResult(
@@ -340,7 +344,7 @@ export class Parser {
 			}
 
 			params.push(parameter);
-			iterator.disposeIf("is", TokenType.COMMA);
+			iterator.disposeIf(TokenType.COMMA);
 		}
 
 		iterator.expect(right);
@@ -359,7 +363,7 @@ export class Parser {
 
 		while (iterator.peek().type !== right) {
 			params.push(iterator.expectResult(TokenType.IDENTIFIER).value);
-			iterator.disposeIf("is", TokenType.COMMA);
+			iterator.disposeIf(TokenType.COMMA);
 		}
 
 		iterator.expect(right);
@@ -379,7 +383,7 @@ export class Parser {
 		const args: Expression[] = [];
 		while (iterator.peek().type !== right) {
 			args.push(this.parseExpression(ctx));
-			iterator.disposeIf("is", TokenType.COMMA);
+			iterator.disposeIf(TokenType.COMMA);
 		}
 
 		iterator.expect(right);

@@ -1,4 +1,4 @@
-import { EOFToken, TokenType, type AnyToken } from "./tokens.js";
+import { TokenOf, TokenType, type AnyToken } from "./tokens.js";
 
 interface IterableOptions {
 	tracking?: boolean;
@@ -63,7 +63,7 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 	}
 
 	peek(amount: number = 0) {
-		const eof = { type: TokenType.EOF } as EOFToken;
+		const eof: TokenOf<TokenType.EOF> = { type: TokenType.EOF, raw: "" };
 		return this.items[amount + this.offset] || eof;
 	}
 
@@ -106,16 +106,15 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 		return false;
 	}
 
-	disposeIf(mode: "is" | "not", check: IterableCheck<T>, n = 1) {
+	disposeIf(check: IterableCheck<T>, n = 1) {
 		const status = this.match(check, n);
+		if (status == true) this.advance(n);
+		return status;
+	}
 
-		if (
-			(mode == "is" && status == true) ||
-			(mode == "not" && status == false)
-		) {
-			this.advance(n);
-		}
-
+	disposeNot(check: IterableCheck<T>, n = 1) {
+		const status = this.match(check, n);
+		if (status == false) this.advance(n);
 		return status;
 	}
 

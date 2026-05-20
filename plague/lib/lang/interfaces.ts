@@ -1,5 +1,3 @@
-import type TokenIterator from "../token-iterator.js";
-import type { System } from "./states.js";
 import type { DataType } from "./variables.js";
 
 export enum BinaryMethod {
@@ -16,6 +14,11 @@ export enum BinaryMethod {
 	OR,
 	ASSIGN,
 	DOT,
+}
+
+export interface VariableOptions {
+	type?: DataType;
+	readonly?: boolean;
 }
 
 export type FunctionParameter = {
@@ -44,12 +47,6 @@ export type ReturnStatement = {
 	type: StatementType.RETURN;
 	value?: Expression;
 };
-export type IfStatement = {
-	type: StatementType.IF;
-	condition: Expression;
-	body: Statement[];
-	else?: Statement[];
-};
 
 export type Statement =
 	| CustomStatement
@@ -61,8 +58,13 @@ export type Statement =
 			params: FunctionParameter[];
 			body: Statement[];
 	  }
-	| ReturnStatement
-	| IfStatement
+	| { type: StatementType.RETURN; value?: Expression }
+	| {
+			type: StatementType.IF;
+			condition: Expression;
+			body: Statement[];
+			else?: Statement[];
+	  }
 	| {
 			type: StatementType.FORLOOP;
 			name: string;
@@ -235,18 +237,4 @@ export class Ast {
 		type: ExpressionType.TYPE_REF,
 		value,
 	});
-}
-
-export class Describe {
-	static Expression = Ast;
-}
-
-export interface ParserContext {
-	iterator: TokenIterator;
-	system: System;
-}
-
-export interface VariableOptions {
-	type?: DataType;
-	readonly?: boolean;
 }

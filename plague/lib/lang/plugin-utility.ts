@@ -4,7 +4,6 @@ import {
 	type CustomStatement,
 	Expression,
 	ExpressionOf,
-	type ParserContext,
 	type Statement,
 	StatementOf,
 	StatementType,
@@ -12,6 +11,7 @@ import {
 } from "./interfaces.js";
 import { DataScope } from "./states.js";
 import { DataValue } from "./variables.js";
+import { ParserContext } from "./parser.js";
 
 export type PlagueFNCallback = () => [string, DataValue, VariableOptions?];
 

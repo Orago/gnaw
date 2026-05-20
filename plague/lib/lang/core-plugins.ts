@@ -6,16 +6,13 @@ import {
 	ExpressionOf,
 	ExpressionType,
 	FunctionParameter,
-	IfStatement,
-	type ParserContext,
-	ReturnStatement,
 	type Statement,
 	StatementOf,
 	StatementType,
-	VariableOptions,
+	VariableOptions
 } from "./interfaces.js";
 import { FunctionUtil, Language } from "./language.js";
-import { Parser } from "./parser.js";
+import { Parser, ParserContext } from "./parser.js";
 import { Plugin } from "./plugin-utility.js";
 import { DataType, DataValue, DataValueOf, Var } from "./variables.js";
 
@@ -139,7 +136,10 @@ export class ReturnPlugin extends Plugin {
 		super();
 
 		this.statements = [
-			Plugin.statementHandler<ReturnStatement | IfStatement>({
+			Plugin.statementHandler<
+				| StatementOf<StatementType.RETURN>
+				| StatementOf<StatementType.IF>
+			>({
 				trim_case: true,
 				case: (t) =>
 					t.type == TokenType.IDENTIFIER && t.value == "return",
@@ -214,7 +214,7 @@ export class IfPlugin extends Plugin {
 		super();
 
 		this.statements = [
-			Plugin.statementHandler<IfStatement>({
+			Plugin.statementHandler<StatementOf<StatementType.IF>>({
 				trim_case: true,
 				case: (t) => t.type == TokenType.IDENTIFIER && t.value == "if",
 				createStatement: (ctx) => {
@@ -228,7 +228,6 @@ export class IfPlugin extends Plugin {
 
 					if (
 						iterator.disposeIf(
-							"is",
 							(t) =>
 								t.type == TokenType.IDENTIFIER &&
 								t.value == "else"
@@ -300,7 +299,7 @@ export class TablesPlugin extends Plugin<{}> {
 							const value = Parser.parseExpression(ctx);
 							entries.push({ value });
 						}
-						iterator.disposeIf("is", TokenType.COMMA);
+						iterator.disposeIf(TokenType.COMMA);
 					}
 
 					iterator.expect(TokenType.BRACE_RIGHT);
@@ -329,7 +328,7 @@ export class TablesPlugin extends Plugin<{}> {
 						}
 					}
 
-					return Var.Object(obj)
+					return Var.Object(obj);
 				},
 			}),
 		];
@@ -517,7 +516,7 @@ export class ArrayPlugin extends Plugin<{}> {
 					while (iterator.peek().type !== TokenType.BRACKET_RIGHT) {
 						const value = Parser.parseExpression(ctx);
 						entries.push(value);
-						iterator.disposeIf("is", TokenType.COMMA);
+						iterator.disposeIf(TokenType.COMMA);
 					}
 
 					iterator.expect(TokenType.BRACKET_RIGHT);

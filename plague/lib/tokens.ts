@@ -149,3 +149,5 @@ export type AnyToken =
 	| PunctuationToken
 	| DelimiterToken
 	| EOFToken;
+
+export type TokenOf<T extends TokenType> = Extract<AnyToken, { type: T }>;
