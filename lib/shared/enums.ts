@@ -41,7 +41,7 @@ export enum ExpressionType {
 }
 
 export enum LogicPriority {
-	LOWEST = 0,
+	LOWEST,
 	ASSIGN,
 	OR,
 	AND,
