@@ -15,6 +15,10 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./core-plugins": {
+			"types": "./dist/plugin/core-plugins.d.ts",
+			"import": "./dist/plugin/core-plugins.js"
 		}
 	},
 	"author": "",
