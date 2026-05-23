@@ -16,12 +16,12 @@ export {
 } from "./shared/enums.js";
 export {
 	DataType,
-	CustomDataValue,
-	FunctionContext,
-	FunctionDataValue,
-	ObjectDataValue,
-	DataValue,
-	DataValueOf,
+	type CustomDataValue,
+	type FunctionContext,
+	type FunctionDataValue,
+	type ObjectDataValue,
+	type DataValue,
+	type DataValueOf,
 	Var,
 } from "./shared/variables.js";
 export * as Interface from "./shared/interfaces.js";

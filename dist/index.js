@@ -6,6 +6,6 @@ export { Plugin } from "./plugin/plugin-utility.js";
 export { Language, FunctionUtil } from "./runtime/index.js";
 export { DataScope, Environment, System } from "./shared/data.js";
 export { BinaryMethod, ExpressionType, LogicPriority, StatementType } from "./shared/enums.js";
-export { DataType } from "./shared/variables.js";
+export { DataType, Var } from "./shared/variables.js";
 import * as _Interface from "./shared/interfaces.js";
 export { _Interface as Interface };
