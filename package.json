@@ -11,6 +11,12 @@
 		"build:p": "tsc && npm run build",
 		"q": "npm run build && npm start"
 	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
 	"author": "",
 	"license": "ISC",
 	"description": "",
