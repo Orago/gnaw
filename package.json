@@ -8,6 +8,7 @@
 		"test": "npm run build && cd tests/current && node index",
 		"r": "tsc && npm start",
 		"build": "swc lib -d dist --strip-leading-paths",
+		"build:p": "tsc && npm run build",
 		"q": "npm run build && npm start"
 	},
 	"author": "",

@@ -13,6 +13,7 @@
 		"types": [
 			"node"
 		],
+		"emitDeclarationOnly": true,
 		"declaration": true,
 		"resolveJsonModule": true,
 		"allowJs": true,
