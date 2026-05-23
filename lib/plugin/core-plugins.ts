@@ -267,6 +267,70 @@ export class TablesPlugin extends Plugin<{}> {
 	constructor() {
 		super();
 
+		this.impl = [
+			Plugin.implHandler({
+				name: "set",
+				case: (ctx) =>
+					ctx.name == "set" && ctx.data.type == DataType.OBJECT,
+				handle: (ctx) => {
+					if (Var.is(ctx.data, DataType.OBJECT) != true) {
+						return ctx.data;
+					}
+
+					const key = ctx.args[0];
+					const value = ctx.args[1];
+
+					if (
+						key == undefined ||
+						Var.is(key, DataType.STRING) != true
+					) {
+						throw new Error(`Invalid key for map`);
+					} else if (value == undefined) {
+						throw new Error("Missing value for table");
+					}
+
+					ctx.data.value[key.value] = value;
+				},
+			}),
+
+			Plugin.implHandler({
+				name: "delete",
+				case: (ctx) =>
+					ctx.name == "delete" && ctx.data.type == DataType.OBJECT,
+				handle: (ctx) => {
+					if (Var.is(ctx.data, DataType.OBJECT) != true) {
+						return ctx.data;
+					}
+
+					const key = ctx.args[0];
+
+					if (
+						key == undefined ||
+						Var.is(key, DataType.STRING) != true
+					) {
+						throw new Error(`Invalid key for map`);
+					}
+
+					delete ctx.data.value[key.value];
+				},
+			}),
+
+			Plugin.implHandler({
+				name: "clear",
+				case: (ctx) =>
+					ctx.name == "clear" && ctx.data.type == DataType.OBJECT,
+				handle: (ctx) => {
+					if (Var.is(ctx.data, DataType.OBJECT) != true) {
+						return ctx.data;
+					}
+
+					for (const key of Object.keys(ctx.data.value)) {
+						delete ctx.data.value[key];
+					}
+				},
+			}),
+		];
+
 		this.expressions = [
 			Plugin.expressionHandler<{
 				type: ExpressionType.CUSTOM;

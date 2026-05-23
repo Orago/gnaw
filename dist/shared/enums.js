@@ -1,0 +1,56 @@
+export var BinaryMethod = /*#__PURE__*/ function(BinaryMethod) {
+    BinaryMethod[BinaryMethod["ADD"] = 0] = "ADD";
+    BinaryMethod[BinaryMethod["SUBTRACT"] = 1] = "SUBTRACT";
+    BinaryMethod[BinaryMethod["MULTIPLY"] = 2] = "MULTIPLY";
+    BinaryMethod[BinaryMethod["DIVIDE"] = 3] = "DIVIDE";
+    BinaryMethod[BinaryMethod["GREATER_THAN"] = 4] = "GREATER_THAN";
+    BinaryMethod[BinaryMethod["LESS_THAN"] = 5] = "LESS_THAN";
+    BinaryMethod[BinaryMethod["IS"] = 6] = "IS";
+    BinaryMethod[BinaryMethod["NOT"] = 7] = "NOT";
+    BinaryMethod[BinaryMethod["EXCLAMATION"] = 8] = "EXCLAMATION";
+    BinaryMethod[BinaryMethod["AND"] = 9] = "AND";
+    BinaryMethod[BinaryMethod["OR"] = 10] = "OR";
+    BinaryMethod[BinaryMethod["ASSIGN"] = 11] = "ASSIGN";
+    BinaryMethod[BinaryMethod["DOT"] = 12] = "DOT";
+    return BinaryMethod;
+}({});
+export var StatementType = /*#__PURE__*/ function(StatementType) {
+    StatementType[StatementType["CUSTOM"] = 0] = "CUSTOM";
+    StatementType[StatementType["VARIABLE"] = 1] = "VARIABLE";
+    StatementType[StatementType["EXPRESSION"] = 2] = "EXPRESSION";
+    StatementType[StatementType["FUNCTION"] = 3] = "FUNCTION";
+    StatementType[StatementType["RETURN"] = 4] = "RETURN";
+    StatementType[StatementType["IF"] = 5] = "IF";
+    StatementType[StatementType["FORLOOP"] = 6] = "FORLOOP";
+    return StatementType;
+}({});
+export var ExpressionType = /*#__PURE__*/ function(ExpressionType) {
+    ExpressionType[ExpressionType["CUSTOM"] = 0] = "CUSTOM";
+    ExpressionType[ExpressionType["NUMBER"] = 1] = "NUMBER";
+    ExpressionType[ExpressionType["STRING"] = 2] = "STRING";
+    ExpressionType[ExpressionType["BOOLEAN"] = 3] = "BOOLEAN";
+    ExpressionType[ExpressionType["IDENTIFIER"] = 4] = "IDENTIFIER";
+    ExpressionType[ExpressionType["CALL"] = 5] = "CALL";
+    ExpressionType[ExpressionType["MEMBER_ACCESS"] = 6] = "MEMBER_ACCESS";
+    ExpressionType[ExpressionType["BINARY"] = 7] = "BINARY";
+    ExpressionType[ExpressionType["UNARY"] = 8] = "UNARY";
+    ExpressionType[ExpressionType["FUNCTION"] = 9] = "FUNCTION";
+    ExpressionType[ExpressionType["ASSIGN"] = 10] = "ASSIGN";
+    ExpressionType[ExpressionType["IMPL"] = 11] = "IMPL";
+    ExpressionType[ExpressionType["TYPE_REF"] = 12] = "TYPE_REF";
+    return ExpressionType;
+}({});
+export var LogicPriority = /*#__PURE__*/ function(LogicPriority) {
+    LogicPriority[LogicPriority["LOWEST"] = 0] = "LOWEST";
+    LogicPriority[LogicPriority["ASSIGN"] = 1] = "ASSIGN";
+    LogicPriority[LogicPriority["OR"] = 2] = "OR";
+    LogicPriority[LogicPriority["AND"] = 3] = "AND";
+    LogicPriority[LogicPriority["EQUALITY"] = 4] = "EQUALITY";
+    LogicPriority[LogicPriority["COMPARE"] = 5] = "COMPARE";
+    LogicPriority[LogicPriority["TERM"] = 6] = "TERM";
+    LogicPriority[LogicPriority["FACTOR"] = 7] = "FACTOR";
+    LogicPriority[LogicPriority["UNARY"] = 8] = "UNARY";
+    LogicPriority[LogicPriority["CALL"] = 9] = "CALL";
+    LogicPriority[LogicPriority["MEMBER"] = 10] = "MEMBER";
+    return LogicPriority;
+}({});
