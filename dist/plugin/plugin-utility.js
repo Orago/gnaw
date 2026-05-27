@@ -134,6 +134,27 @@ export var Plugin = /*#__PURE__*/ function() {
             }
         },
         {
+            key: "functionHandler",
+            value: function functionHandler(name, data, options) {
+                if (options != undefined) {
+                    return function() {
+                        return [
+                            name,
+                            data,
+                            options
+                        ];
+                    };
+                } else {
+                    return function() {
+                        return [
+                            name,
+                            data
+                        ];
+                    };
+                }
+            }
+        },
+        {
             key: "wrapFunction",
             value: function wrapFunction(name, data, options) {
                 if (options != undefined) {

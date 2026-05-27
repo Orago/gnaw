@@ -29,7 +29,6 @@ print(paddedDimensions(0, 0, 500, 500, 20))
 `;
 
 const system = new System();
-system.plugins = [...core_plugins];
 
 const env = new Environment(system);
 env.root_scope.set("print", {
@@ -42,6 +41,8 @@ env.root_scope.set("print", {
 		return { type: DataType.NULL, value: 0 };
 	},
 });
+
+system.loadPlugins(core_plugins)
 const statements = Parser.parseString(system, script);
 // console.log(JSON.stringify(statements, null, 2), ["statements!"]);
 

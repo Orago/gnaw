@@ -5,6 +5,7 @@ import { Statement } from "../shared/interfaces.js";
 import { StatementParser } from "./statements.js";
 import { ParserContext } from "./types.js";
 import { System } from "../shared/data.js";
+
 export class Parser {
 	static createContext(system: System, tokens: AnyToken[]): ParserContext {
 		const iterator = new TokenIterator(tokens);

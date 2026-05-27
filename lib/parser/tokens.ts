@@ -14,6 +14,7 @@ export enum TokenType {
 	// literals
 	NUMBER,
 	STRING,
+	BOOLEAN,
 	IDENTIFIER,
 
 	// keywords
@@ -57,38 +58,66 @@ export enum TokenType {
 	COMMENT,
 }
 
-export interface BaseToken<
+export const token_group_map: Partial<Record<TokenType, TokenGroup>> = {
+	[TokenType.BRACE_LEFT]: TokenGroup.DELIMITER,
+	[TokenType.BRACE_RIGHT]: TokenGroup.DELIMITER,
+
+	[TokenType.BRACKET_LEFT]: TokenGroup.DELIMITER,
+	[TokenType.BRACKET_RIGHT]: TokenGroup.DELIMITER,
+
+	[TokenType.PAREN_LEFT]: TokenGroup.DELIMITER,
+	[TokenType.PAREN_RIGHT]: TokenGroup.DELIMITER,
+
+	[TokenType.COMMA]: TokenGroup.PUNCTUATION,
+	[TokenType.DOT]: TokenGroup.PUNCTUATION,
+	[TokenType.COLON]: TokenGroup.PUNCTUATION,
+	[TokenType.SEMICOLON]: TokenGroup.PUNCTUATION,
+	[TokenType.NEWLINE]: TokenGroup.PUNCTUATION,
+	[TokenType.INDENT]: TokenGroup.PUNCTUATION,
+	[TokenType.NUMBER]: TokenGroup.NUMBER,
+	[TokenType.BOOLEAN]: TokenGroup.BOOLEAN,
+
+	[TokenType.CAST]: TokenGroup.OPERATOR,
+
+	[TokenType.PLUS]: TokenGroup.OPERATOR,
+	[TokenType.MINUS]: TokenGroup.OPERATOR,
+	[TokenType.STAR]: TokenGroup.OPERATOR,
+	[TokenType.SLASH]: TokenGroup.OPERATOR,
+	[TokenType.EQUAL]: TokenGroup.OPERATOR,
+	[TokenType.EXCLAMATION]: TokenGroup.OPERATOR,
+	[TokenType.LESS_THAN]: TokenGroup.OPERATOR,
+	[TokenType.GREATER_THAN]: TokenGroup.OPERATOR,
+};
+
+interface BaseToken<
 	Group extends TokenGroup | undefined,
 	Type extends TokenType
 > {
-	group?: Group;
 	type: Type;
 	raw: string;
 	// value: string;
 }
 
-export interface CommentToken extends BaseToken<undefined, TokenType.COMMENT> {
+interface CommentToken extends BaseToken<undefined, TokenType.COMMENT> {
 	value: string;
 }
-export interface StringToken extends BaseToken<undefined, TokenType.STRING> {
+interface StringToken extends BaseToken<undefined, TokenType.STRING> {
 	value: string;
 }
 
-export interface NumberToken extends BaseToken<undefined, TokenType.NUMBER> {
+interface NumberToken extends BaseToken<undefined, TokenType.NUMBER> {
 	value: number;
 }
 
-export interface BooleanToken
-	extends BaseToken<TokenGroup.BOOLEAN, TokenType.NUMBER> {
+interface BooleanToken extends BaseToken<undefined, TokenType.BOOLEAN> {
 	value: 0 | 1;
 }
 
-export interface IdentifierToken
-	extends BaseToken<undefined, TokenType.IDENTIFIER> {
+interface IdentifierToken extends BaseToken<undefined, TokenType.IDENTIFIER> {
 	value: string;
 }
 
-export interface OperatorToken
+interface OperatorToken
 	extends BaseToken<
 		TokenGroup.OPERATOR,
 		| TokenType.PLUS
@@ -108,7 +137,7 @@ export interface OperatorToken
 
 export interface EOFToken extends BaseToken<undefined, TokenType.EOF> {}
 
-export interface PunctuationToken
+interface PunctuationToken
 	extends BaseToken<
 		TokenGroup.PUNCTUATION,
 		| TokenType.COMMA
@@ -122,7 +151,7 @@ export interface PunctuationToken
 	value: string;
 }
 
-export interface DelimiterToken
+interface DelimiterToken
 	extends BaseToken<
 		TokenGroup.DELIMITER,
 		| TokenType.PAREN_LEFT
@@ -148,6 +177,7 @@ export type AnyToken =
 	| IdentifierToken
 	| PunctuationToken
 	| DelimiterToken
+	| BooleanToken
 	| EOFToken;
 
 export type TokenOf<T extends TokenType> = Extract<AnyToken, { type: T }>;

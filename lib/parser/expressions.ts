@@ -133,13 +133,12 @@ export class ExpressionParser {
 		}
 
 		switch (t.type) {
-			case TokenType.NUMBER: {
-				if (t.group == TokenGroup.BOOLEAN) {
-					return Ast.Boolean(!!t.value);
-				} else {
-					return Ast.Number(t.value);
-				}
-			}
+			case TokenType.BOOLEAN:
+				return Ast.Boolean(!!t.value);
+
+			case TokenType.NUMBER:
+				return Ast.Number(t.value);
+
 			case TokenType.STRING:
 				return Ast.String(t.value);
 
@@ -169,7 +168,6 @@ export class ExpressionParser {
 
 				while (true) {
 					const next = iterator.peek();
-
 					// invoking
 					if (next.type === TokenType.PAREN_LEFT) {
 						const args: Expression[] =

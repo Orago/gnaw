@@ -9,3 +9,4 @@ export { BinaryMethod, ExpressionType, LogicPriority, StatementType } from "./sh
 export { DataType, Var } from "./shared/variables.js";
 import * as _Interface from "./shared/interfaces.js";
 export { _Interface as Interface };
+export * from "./shared/interfaces.js";

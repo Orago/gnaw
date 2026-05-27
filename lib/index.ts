@@ -25,3 +25,4 @@ export {
 	Var,
 } from "./shared/variables.js";
 export * as Interface from "./shared/interfaces.js";
+export * from "./shared/interfaces.js";

@@ -30,7 +30,7 @@ function _define_property(obj, key, value) {
     }
     return obj;
 }
-import { TokenGroup, TokenType } from "./tokens.js";
+import { TokenType } from "./tokens.js";
 export var default_language_dicitionary = {
     // grouping
     brace_left: [
@@ -276,11 +276,12 @@ export var Lexer = /*#__PURE__*/ function() {
         {
             key: "_parseDelimiter",
             value: function _parseDelimiter(value, keywords) {
-                if (keywords.brace_left.includes(value)) {
-                    return TokenType.BRACE_LEFT;
-                } else if (keywords.brace_right.includes(value)) {
-                    return TokenType.BRACE_RIGHT;
-                } else if (keywords.bracket_left.includes(value)) {
+                // if (keywords.brace_left.includes(value)) {
+                // 	return TokenType.BRACE_LEFT;
+                // } else if (keywords.brace_right.includes(value)) {
+                // 	return TokenType.BRACE_RIGHT;
+                // }
+                if (keywords.bracket_left.includes(value)) {
                     return TokenType.BRACKET_LEFT;
                 } else if (keywords.bracket_right.includes(value)) {
                     return TokenType.BRACKET_RIGHT;
@@ -288,11 +289,12 @@ export var Lexer = /*#__PURE__*/ function() {
                     return TokenType.PAREN_LEFT;
                 } else if (keywords.parenthesis_right.includes(value)) {
                     return TokenType.PAREN_RIGHT;
-                } else if (keywords.newline.includes(value)) {
-                    return TokenType.NEWLINE;
-                } else if (keywords.indent.includes(value)) {
-                    return TokenType.INDENT;
                 }
+            // else if (keywords.newline.includes(value)) {
+            // 	return TokenType.NEWLINE;
+            // } else if (keywords.indent.includes(value)) {
+            // 	return TokenType.INDENT;
+            // }
             }
         },
         {
@@ -303,7 +305,6 @@ export var Lexer = /*#__PURE__*/ function() {
                 if (keywords.brace_left.includes(value)) {
                     token = {
                         type: TokenType.BRACE_LEFT,
-                        group: TokenGroup.DELIMITER,
                         raw: value,
                         value: value,
                         level: ++level
@@ -311,7 +312,6 @@ export var Lexer = /*#__PURE__*/ function() {
                 } else if (keywords.brace_right.includes(value)) {
                     token = {
                         type: TokenType.BRACE_RIGHT,
-                        group: TokenGroup.DELIMITER,
                         raw: value,
                         value: value,
                         level: level--
@@ -319,7 +319,6 @@ export var Lexer = /*#__PURE__*/ function() {
                 } else if ((tmptoken = this._parseDelimiter(value, keywords)) != undefined) {
                     token = {
                         type: tmptoken,
-                        group: TokenGroup.DELIMITER,
                         raw: value,
                         value: value
                     };
@@ -333,7 +332,6 @@ export var Lexer = /*#__PURE__*/ function() {
                 } else if ((tmptoken = this._parsePunctuation(value, keywords)) != undefined) {
                     token = {
                         type: tmptoken,
-                        group: TokenGroup.PUNCTUATION,
                         raw: value,
                         value: value
                     };
@@ -345,15 +343,13 @@ export var Lexer = /*#__PURE__*/ function() {
                     };
                 } else if (keywords.boolean_true.includes(value)) {
                     token = {
-                        type: TokenType.NUMBER,
-                        group: TokenGroup.BOOLEAN,
+                        type: TokenType.BOOLEAN,
                         raw: value,
                         value: +true
                     };
                 } else if (keywords.boolean_false.includes(value)) {
                     token = {
-                        type: TokenType.NUMBER,
-                        group: TokenGroup.BOOLEAN,
+                        type: TokenType.BOOLEAN,
                         raw: value,
                         value: +false
                     };
@@ -372,7 +368,6 @@ export var Lexer = /*#__PURE__*/ function() {
                 } else if (keywords.cast.includes(value)) {
                     token = {
                         type: TokenType.CAST,
-                        group: TokenGroup.OPERATOR,
                         value: value,
                         raw: value
                     };
@@ -391,7 +386,6 @@ export var Lexer = /*#__PURE__*/ function() {
                 } else if ((tmptoken = this._parseOperator(value, keywords)) != undefined) {
                     token = {
                         type: tmptoken,
-                        group: TokenGroup.OPERATOR,
                         raw: value,
                         value: value
                     };

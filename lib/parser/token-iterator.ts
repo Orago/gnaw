@@ -11,7 +11,6 @@ export type IterableCheck<T extends AnyToken = AnyToken> =
 	TokenType | TokenType[] | ((value: T) => boolean) | RegExp;
 
 export default class TokenIterator<T extends AnyToken = AnyToken> {
-	readonly stack: T[] = [];
 	public items: (T | undefined)[];
 	offset: number = 0;
 	log_count: number = 10;

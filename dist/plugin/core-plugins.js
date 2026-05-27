@@ -260,6 +260,7 @@ export var FunctionPlugin = /*#__PURE__*/ function(Plugin1) {
                     return t.type == TokenType.IDENTIFIER && t.value == "fn";
                 },
                 createStatement: function createStatement(ctx) {
+                    console.log("CREATING");
                     var iterator = ctx.iterator;
                     var name = iterator.expectResult(TokenType.IDENTIFIER).value;
                     var params = ParserQuick.parseParameters(ctx);

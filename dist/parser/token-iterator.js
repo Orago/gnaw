@@ -173,12 +173,10 @@ var TokenIterator = /*#__PURE__*/ function() {
         var settings = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
         _class_call_check(this, TokenIterator);
         _define_property(this, "settings", void 0);
-        _define_property(this, "stack", void 0);
         _define_property(this, "items", void 0);
         _define_property(this, "offset", void 0);
         _define_property(this, "log_count", void 0);
         this.settings = settings;
-        this.stack = [];
         this.offset = 0;
         this.log_count = 10;
         this.items = _to_consumable_array(items);

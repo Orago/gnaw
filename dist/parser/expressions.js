@@ -30,7 +30,7 @@ function _define_property(obj, key, value) {
     }
     return obj;
 }
-import { TokenGroup, TokenType } from "./tokens.js";
+import { TokenType } from "./tokens.js";
 import { TypeCasts } from "../shared/casts.js";
 import { BinaryMethod, ExpressionType, LogicPriority } from "../shared/enums.js";
 import { Ast } from "./ast.js";
@@ -149,14 +149,10 @@ export var ExpressionParser = /*#__PURE__*/ function() {
                     }
                 }
                 switch(t.type){
+                    case TokenType.BOOLEAN:
+                        return Ast.Boolean(!!t.value);
                     case TokenType.NUMBER:
-                        {
-                            if (t.group == TokenGroup.BOOLEAN) {
-                                return Ast.Boolean(!!t.value);
-                            } else {
-                                return Ast.Number(t.value);
-                            }
-                        }
+                        return Ast.Number(t.value);
                     case TokenType.STRING:
                         return Ast.String(t.value);
                     case TokenType.MINUS:

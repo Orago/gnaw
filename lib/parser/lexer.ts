@@ -1,11 +1,4 @@
-import {
-	AnyToken,
-	DelimiterToken,
-	OperatorToken,
-	PunctuationToken,
-	TokenGroup,
-	TokenType,
-} from "./tokens.js";
+import { AnyToken, TokenType } from "./tokens.js";
 
 export interface LanguageDictionary extends Record<string, string[]> {
 	// grouping
@@ -158,7 +151,7 @@ export class Lexer {
 	private static _parseOperator(
 		value: string | undefined,
 		keywords: LanguageDictionary
-	): OperatorToken["type"] | undefined {
+	) {
 		if (value == undefined) return undefined;
 
 		if (keywords.plus.includes(value)) {
@@ -185,7 +178,7 @@ export class Lexer {
 	private static _parsePunctuation(
 		value: string,
 		keywords: LanguageDictionary
-	): PunctuationToken["type"] | undefined {
+	) {
 		if (keywords.comma.includes(value)) {
 			return TokenType.COMMA;
 		} else if (keywords.dot.includes(value)) {
@@ -208,12 +201,14 @@ export class Lexer {
 	private static _parseDelimiter(
 		value: string,
 		keywords: LanguageDictionary
-	): DelimiterToken["type"] | undefined {
-		if (keywords.brace_left.includes(value)) {
-			return TokenType.BRACE_LEFT;
-		} else if (keywords.brace_right.includes(value)) {
-			return TokenType.BRACE_RIGHT;
-		} else if (keywords.bracket_left.includes(value)) {
+	) {
+		// if (keywords.brace_left.includes(value)) {
+		// 	return TokenType.BRACE_LEFT;
+		// } else if (keywords.brace_right.includes(value)) {
+		// 	return TokenType.BRACE_RIGHT;
+		// }
+
+		if (keywords.bracket_left.includes(value)) {
 			return TokenType.BRACKET_LEFT;
 		} else if (keywords.bracket_right.includes(value)) {
 			return TokenType.BRACKET_RIGHT;
@@ -221,11 +216,13 @@ export class Lexer {
 			return TokenType.PAREN_LEFT;
 		} else if (keywords.parenthesis_right.includes(value)) {
 			return TokenType.PAREN_RIGHT;
-		} else if (keywords.newline.includes(value)) {
-			return TokenType.NEWLINE;
-		} else if (keywords.indent.includes(value)) {
-			return TokenType.INDENT;
 		}
+
+		// else if (keywords.newline.includes(value)) {
+		// 	return TokenType.NEWLINE;
+		// } else if (keywords.indent.includes(value)) {
+		// 	return TokenType.INDENT;
+		// }
 	}
 
 	static parseToken(
@@ -241,7 +238,6 @@ export class Lexer {
 		if (keywords.brace_left.includes(value)) {
 			token = {
 				type: TokenType.BRACE_LEFT,
-				group: TokenGroup.DELIMITER,
 				raw: value,
 				value,
 				level: ++level,
@@ -249,7 +245,6 @@ export class Lexer {
 		} else if (keywords.brace_right.includes(value)) {
 			token = {
 				type: TokenType.BRACE_RIGHT,
-				group: TokenGroup.DELIMITER,
 				raw: value,
 				value,
 				level: level--,
@@ -259,7 +254,6 @@ export class Lexer {
 		) {
 			token = {
 				type: tmptoken,
-				group: TokenGroup.DELIMITER,
 				raw: value,
 				value,
 			};
@@ -274,7 +268,6 @@ export class Lexer {
 		) {
 			token = {
 				type: tmptoken,
-				group: TokenGroup.PUNCTUATION,
 				raw: value,
 				value,
 			};
@@ -286,15 +279,13 @@ export class Lexer {
 			};
 		} else if (keywords.boolean_true.includes(value)) {
 			token = {
-				type: TokenType.NUMBER,
-				group: TokenGroup.BOOLEAN,
+				type: TokenType.BOOLEAN,
 				raw: value,
 				value: +true as 1,
 			};
 		} else if (keywords.boolean_false.includes(value)) {
 			token = {
-				type: TokenType.NUMBER,
-				group: TokenGroup.BOOLEAN,
+				type: TokenType.BOOLEAN,
 				raw: value,
 				value: +false as 0,
 			};
@@ -313,7 +304,6 @@ export class Lexer {
 		} else if (keywords.cast.includes(value)) {
 			token = {
 				type: TokenType.CAST,
-				group: TokenGroup.OPERATOR,
 				value,
 				raw: value,
 			};
@@ -336,7 +326,6 @@ export class Lexer {
 		) {
 			token = {
 				type: tmptoken,
-				group: TokenGroup.OPERATOR,
 				raw: value,
 				value,
 			};

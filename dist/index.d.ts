@@ -8,3 +8,4 @@ export { DataScope, Environment, System } from "./shared/data.js";
 export { BinaryMethod, ExpressionType, LogicPriority, StatementType, } from "./shared/enums.js";
 export { DataType, type CustomDataValue, type FunctionContext, type FunctionDataValue, type ObjectDataValue, type DataValue, type DataValueOf, Var, } from "./shared/variables.js";
 export * as Interface from "./shared/interfaces.js";
+export * from "./shared/interfaces.js";

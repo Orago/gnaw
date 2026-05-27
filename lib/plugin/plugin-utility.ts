@@ -64,6 +64,18 @@ export abstract class Plugin<
 		}
 	}
 
+	static functionHandler(
+		name: string,
+		data: DataValue,
+		options?: VariableOptions
+	): PlagueFNCallback {
+		if (options != undefined) {
+			return () => [name, data, options];
+		} else {
+			return () => [name, data];
+		}
+	}
+
 	static wrapFunction(
 		name: string,
 		data: DataValue,
