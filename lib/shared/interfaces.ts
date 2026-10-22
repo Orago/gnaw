@@ -18,7 +18,6 @@ export type CustomStatement<T extends any = any> = {
 	data: T;
 };
 
-
 export type Statement =
 	| CustomStatement
 	| { type: StatementType.VARIABLE; name: string; value: Expression }

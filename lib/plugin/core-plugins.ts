@@ -42,7 +42,7 @@ export class VariablePlugin extends Plugin {
 				createStatement: (ctx) => {
 					const { iterator } = ctx;
 					const name = iterator.expectResult(
-						TokenType.IDENTIFIER
+						TokenType.IDENTIFIER,
 					).value;
 					iterator.expect(TokenType.EQUAL);
 					const value = ExpressionParser.parse(ctx);
@@ -55,7 +55,7 @@ export class VariablePlugin extends Plugin {
 				handleStatement(statement, scope) {
 					const value = Language.evaluateExpression(
 						statement.value,
-						scope
+						scope,
 					);
 					scope.set(statement.name, value);
 				},
@@ -84,7 +84,7 @@ export class FunctionPlugin extends Plugin<{}> {
 					return FunctionUtil.createFunction(
 						expression.params,
 						expression.body,
-						scope
+						scope,
 					);
 				},
 			}),
@@ -97,7 +97,7 @@ export class FunctionPlugin extends Plugin<{}> {
 				createStatement: (ctx) => {
 					const { iterator } = ctx;
 					const name = iterator.expectResult(
-						TokenType.IDENTIFIER
+						TokenType.IDENTIFIER,
 					).value;
 					const params = ParserQuick.parseParameters(ctx);
 					const body = ParserQuick.parseStatementBlock(ctx);
@@ -114,7 +114,7 @@ export class FunctionPlugin extends Plugin<{}> {
 					const fn = FunctionUtil.createFunction(
 						statement.params,
 						statement.body,
-						scope
+						scope,
 					);
 					scope.set(statement.name, fn);
 				},
@@ -148,7 +148,7 @@ export class ReturnPlugin extends Plugin {
 							iterator.match(
 								(t) =>
 									t.type == TokenType.IDENTIFIER &&
-									t.value == "if"
+									t.value == "if",
 							)
 						) {
 							iterator.next();
@@ -223,7 +223,7 @@ export class IfPlugin extends Plugin {
 						iterator.disposeIf(
 							(t) =>
 								t.type == TokenType.IDENTIFIER &&
-								t.value == "else"
+								t.value == "else",
 						)
 					) {
 						else_block = ParserQuick.parseStatementBlock(ctx);
@@ -240,7 +240,7 @@ export class IfPlugin extends Plugin {
 				handleStatement(statement, scope): void {
 					const condition = Language.evaluateExpression(
 						statement.condition,
-						scope
+						scope,
 					);
 
 					if (
@@ -348,7 +348,7 @@ export class TablesPlugin extends Plugin<{}> {
 							iterator.peek(1).type == TokenType.EQUAL
 						) {
 							const key = iterator.expectResult(
-								TokenType.IDENTIFIER
+								TokenType.IDENTIFIER,
 							).value;
 							iterator.expect(TokenType.EQUAL);
 							const value = ExpressionParser.parse(ctx);
@@ -357,6 +357,7 @@ export class TablesPlugin extends Plugin<{}> {
 							const value = ExpressionParser.parse(ctx);
 							entries.push({ value });
 						}
+
 						iterator.disposeIf(TokenType.COMMA);
 					}
 
@@ -376,12 +377,12 @@ export class TablesPlugin extends Plugin<{}> {
 						if ("key" in entry) {
 							obj[entry.key] = Language.evaluateExpression(
 								entry.value,
-								scope
+								scope,
 							);
 						} else {
 							obj[index++] = Language.evaluateExpression(
 								entry.value,
-								scope
+								scope,
 							);
 						}
 					}
@@ -435,12 +436,12 @@ export class ClassPlugin extends Plugin {
 				createStatement: (ctx) => {
 					const { iterator } = ctx;
 					const class_name = iterator.expectResult(
-						TokenType.IDENTIFIER
+						TokenType.IDENTIFIER,
 					).value;
 					const methods: ClassStatement["data"]["methods"] = {};
 					ParserQuick.parseBlock(ctx, () => {
 						const method_name = iterator.expectResult(
-							TokenType.IDENTIFIER
+							TokenType.IDENTIFIER,
 						).value;
 						const params = ParserQuick.parseParameters(ctx);
 						const body = ParserQuick.parseStatementBlock(ctx);
@@ -462,7 +463,7 @@ export class ClassPlugin extends Plugin {
 
 					const class_fn = Var.Function((ctx) => {
 						const obj = Var.Object<DataValueOf<DataType.FUNCTION>>(
-							{}
+							{},
 						);
 
 						for (const [name, m] of Object.entries(methods)) {
@@ -472,11 +473,11 @@ export class ClassPlugin extends Plugin {
 									method_scope,
 									m.params,
 									ctx.args,
-									obj
+									obj,
 								);
 								return FunctionUtil.processFunction(
 									m.body,
-									method_scope
+									method_scope,
 								);
 							});
 						}
@@ -487,7 +488,7 @@ export class ClassPlugin extends Plugin {
 								obj.value["constructor"],
 								scope_ref,
 								ctx.args,
-								obj
+								obj,
 							);
 						}
 
@@ -540,17 +541,17 @@ export class ArrayPlugin extends Plugin<{}> {
 					if (Var.is(ctx.data, DataType.ARRAY)) {
 						if (Var.is(ctx.args[0], DataType.FUNCTION)) {
 							return Var.Array(
-								[...ctx.data.value]
+								[...ctx.data.value],
 								// ctx.data.value.map(e => )
 							);
 						}
 
 						throw new Error(
-							"Cannot call 'Array:each<fn>' using a non-function"
+							"Cannot call 'Array:each<fn>' using a non-function",
 						);
 					}
 					throw new Error(
-						"Cannot call 'Array:each(<fn>)' on a non-array"
+						"Cannot call 'Array:each(<fn>)' on a non-array",
 					);
 					// return ctx.data;
 				},
@@ -632,7 +633,7 @@ export class ForLoopPlugin extends Plugin<{}> {
 		handleStatement: (statement, scope): void => {
 			const start = Language.evaluateExpression(
 				statement.data.start,
-				scope
+				scope,
 			);
 			const end = Language.evaluateExpression(statement.data.end, scope);
 			const start_v = start.type == DataType.NUMBER ? start.value : 0;
@@ -644,7 +645,7 @@ export class ForLoopPlugin extends Plugin<{}> {
 			for (let i = start_v; i <= end_v; i++) {
 				if (++calls > max) {
 					throw new Error(
-						`Too many for-loop calls! (${calls} > ${max})`
+						`Too many for-loop calls! (${calls} > ${max})`,
 					);
 				}
 
@@ -742,7 +743,7 @@ class TypeCastPlugin extends Plugin {
 						return TypeCasts.cast(ctx.data, ctx.args[0].value);
 					} catch (e) {
 						throw new Error(
-							`Cannot cast data to type (${ctx.data.type}) -> (${ctx.args[0].type})`
+							`Cannot cast data to type (${ctx.data.type}) -> (${ctx.args[0].type})`,
 						);
 					}
 				},
@@ -764,13 +765,13 @@ export class CoreMethodsPlugin {
 				console.log(
 					">>",
 					ctx.args.map((e) =>
-						"value" in e ? e.value : Symbol("Custom")
-					)
+						"value" in e ? e.value : Symbol("Custom"),
+					),
 				);
 				return { type: DataType.NULL, value: 0 };
 			},
 		},
-		CoreMethodsPlugin.READONLY_VARIABLE
+		CoreMethodsPlugin.READONLY_VARIABLE,
 	);
 
 	static FN_LEN = Plugin.wrapFunction(
@@ -799,7 +800,7 @@ export class CoreMethodsPlugin {
 				return { type: DataType.NULL, value: 0 };
 			},
 		},
-		CoreMethodsPlugin.READONLY_VARIABLE
+		CoreMethodsPlugin.READONLY_VARIABLE,
 	);
 
 	static list: Plugin["values"] = () => [this.FN_PRINT(), this.FN_LEN()];

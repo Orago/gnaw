@@ -8,7 +8,7 @@ import {
 
 type OpMap<A extends DataType, B extends DataType> = (
 	left: DataValueOf<A>,
-	right: DataValueOf<B>
+	right: DataValueOf<B>,
 ) => DataValue;
 
 type MethodDict = {
@@ -30,7 +30,7 @@ export class DataOperations {
 			);
 		});
 	}
-	
+
 	/** Handle TypeA -> TypeB -> Operation */
 	static Dict: MethodDict = {
 		[DataType.NUMBER]: {
@@ -60,11 +60,11 @@ export class DataOperations {
 					Var.String(String(left.value).concat(String(right.value))),
 				[BinaryMethod.SUBTRACT]: (left, right) =>
 					Var.String(
-						String(left.value).replace(String(right.value), "")
+						String(left.value).replace(String(right.value), ""),
 					),
 				[BinaryMethod.DIVIDE]: (left, right) =>
 					Var.String(
-						String(left.value).replaceAll(String(right.value), "")
+						String(left.value).replaceAll(String(right.value), ""),
 					),
 				[BinaryMethod.IS]: (left, right) =>
 					Var.Boolean(String(left.value) === String(right.value)),
@@ -93,7 +93,7 @@ export class DataOperations {
 	static apply<L extends DataValue, R extends DataValue>(
 		left: L,
 		op: BinaryMethod,
-		right: R
+		right: R,
 	) {
 		const left_part = this.Dict[left.type];
 		if (left_part == undefined) return;

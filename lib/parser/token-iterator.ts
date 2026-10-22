@@ -62,7 +62,7 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 	}
 
 	peek(amount: number = 0) {
-		const eof: TokenOf<TokenType.EOF> = { type: TokenType.EOF, raw: "" };
+		const eof: TokenOf<TokenType.EOF> = { type: TokenType.EOF };
 		return this.items[amount + this.offset] || eof;
 	}
 
@@ -157,6 +157,7 @@ export default class TokenIterator<T extends AnyToken = AnyToken> {
 				return this.items.slice(0, this.offset);
 		}
 	}
+
 	until(
 		check: IterableCheck<T>,
 		callback: (iterator: TokenIterator) => void

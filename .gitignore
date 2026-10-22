@@ -1,3 +1,7 @@
+tests/
+*.md
+*.MD
+
 # Logs
 logs
 *.log
@@ -128,3 +132,4 @@ out
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+

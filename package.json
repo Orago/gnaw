@@ -1,33 +1,34 @@
 {
 	"name": "gnaw-language",
-	"version": "1.0.0",
+	"version": "0.0.1",
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
 		"start": "node dist",
 		"test": "npm run build && cd tests/current && node index",
 		"r": "tsc && npm start",
-		"build": "swc lib -d dist --strip-leading-paths",
+		"build": "tsdown",
 		"build:p": "tsc && npm run build",
 		"q": "npm run build && npm start"
 	},
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs"
 		},
 		"./core-plugins": {
 			"types": "./dist/plugin/core-plugins.d.ts",
-			"import": "./dist/plugin/core-plugins.js"
+			"import": "./dist/plugin/core-plugins.mjs",
+			"require": "./dist/plugin/core-plugins.cjs"
 		}
 	},
-	"author": "",
+	"author": "orago",
 	"license": "ISC",
 	"description": "",
 	"devDependencies": {
-		"@swc/cli": "^0.8.1",
-		"@swc/core": "^1.15.33",
 		"@types/node": "^25.0.10",
+		"tsdown": "^0.23.1",
 		"typescript": "^5.9.3"
 	}
 }

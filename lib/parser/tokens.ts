@@ -89,95 +89,47 @@ export const token_group_map: Partial<Record<TokenType, TokenGroup>> = {
 	[TokenType.GREATER_THAN]: TokenGroup.OPERATOR,
 };
 
-interface BaseToken<
-	Group extends TokenGroup | undefined,
-	Type extends TokenType
-> {
-	type: Type;
-	raw: string;
-	// value: string;
-}
+type OperatorTokenTypes =
+	| TokenType.PLUS
+	| TokenType.MINUS
+	| TokenType.STAR
+	| TokenType.SLASH
+	| TokenType.EQUAL
+	| TokenType.IS
+	| TokenType.NOT
+	| TokenType.EXCLAMATION
+	| TokenType.CAST
+	| TokenType.LESS_THAN
+	| TokenType.GREATER_THAN;
 
-interface CommentToken extends BaseToken<undefined, TokenType.COMMENT> {
-	value: string;
-}
-interface StringToken extends BaseToken<undefined, TokenType.STRING> {
-	value: string;
-}
+type PunctuationTokenTypes =
+	| TokenType.COMMA
+	| TokenType.DOT
+	| TokenType.COLON
+	| TokenType.SEMICOLON
+	| TokenType.NEWLINE
+	| TokenType.INDENT
+	| TokenType.QUESTION_MARK;
 
-interface NumberToken extends BaseToken<undefined, TokenType.NUMBER> {
-	value: number;
-}
-
-interface BooleanToken extends BaseToken<undefined, TokenType.BOOLEAN> {
-	value: 0 | 1;
-}
-
-interface IdentifierToken extends BaseToken<undefined, TokenType.IDENTIFIER> {
-	value: string;
-}
-
-interface OperatorToken
-	extends BaseToken<
-		TokenGroup.OPERATOR,
-		| TokenType.PLUS
-		| TokenType.MINUS
-		| TokenType.STAR
-		| TokenType.SLASH
-		| TokenType.EQUAL
-		| TokenType.IS
-		| TokenType.NOT
-		| TokenType.EXCLAMATION
-		| TokenType.CAST
-		| TokenType.LESS_THAN
-		| TokenType.GREATER_THAN
-	> {
-	value: string;
-}
-
-export interface EOFToken extends BaseToken<undefined, TokenType.EOF> {}
-
-interface PunctuationToken
-	extends BaseToken<
-		TokenGroup.PUNCTUATION,
-		| TokenType.COMMA
-		| TokenType.DOT
-		| TokenType.COLON
-		| TokenType.SEMICOLON
-		| TokenType.NEWLINE
-		| TokenType.INDENT
-		| TokenType.QUESTION_MARK
-	> {
-	value: string;
-}
-
-interface DelimiterToken
-	extends BaseToken<
-		TokenGroup.DELIMITER,
-		| TokenType.PAREN_LEFT
-		| TokenType.PAREN_RIGHT
-		| TokenType.BRACE_LEFT
-		| TokenType.BRACE_RIGHT
-		| TokenType.BRACKET_LEFT
-		| TokenType.BRACKET_RIGHT
-		| TokenType.NEWLINE
-		| TokenType.INDENT
-	> {
-	// subset?: SeparatorTokenType;
-	value: string;
-	level?: number;
-}
+type DelimiterTokenTypes =
+	| TokenType.PAREN_LEFT
+	| TokenType.PAREN_RIGHT
+	| TokenType.BRACE_LEFT
+	| TokenType.BRACE_RIGHT
+	| TokenType.BRACKET_LEFT
+	| TokenType.BRACKET_RIGHT
+	| TokenType.NEWLINE
+	| TokenType.INDENT;
 
 export type AnyToken =
-	| CommentToken
-	| StringToken
-	| NumberToken
-	| BooleanToken
-	| OperatorToken
-	| IdentifierToken
-	| PunctuationToken
-	| DelimiterToken
-	| BooleanToken
-	| EOFToken;
+	| { type: TokenType.COMMENT; raw: string; value: string }
+	| { type: TokenType.STRING; raw: string; value: string }
+	| { type: TokenType.NUMBER; raw: string; value: number }
+	| { type: TokenType.BOOLEAN; raw: string; value: 0 | 1 }
+	| { type: TokenType.IDENTIFIER; raw: string; value: string }
+	| { type: OperatorTokenTypes; raw: string; value: string }
+	| { type: PunctuationTokenTypes; raw: string; value: string }
+	| { type: DelimiterTokenTypes; raw: string; value: string; level?: number }
+	| { type: TokenType.EOF };
 
 export type TokenOf<T extends TokenType> = Extract<AnyToken, { type: T }>;
